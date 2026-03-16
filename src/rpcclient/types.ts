@@ -115,12 +115,73 @@ export interface GetBlockVerboseResult extends GetBlockHeaderVerboseResult {
   tx: TransactionJsonResult[];
 }
 
+export interface GetContractStateNefMethodTokenResult {
+  hash: string;
+  method: string;
+  parameterscount: number;
+  hasreturnvalue: boolean;
+  callflags: string;
+}
+
+export interface GetContractStateNefResult {
+  magic?: number;
+  compiler: string;
+  source: string;
+  tokens: GetContractStateNefMethodTokenResult[];
+  script: string;
+  checksum: number;
+}
+
+export interface GetContractStateManifestParameterResult {
+  name: string;
+  type: string;
+}
+
+export interface GetContractStateManifestMethodResult {
+  name: string;
+  offset: number;
+  parameters: GetContractStateManifestParameterResult[];
+  returntype: string;
+  safe: boolean;
+}
+
+export interface GetContractStateManifestEventResult {
+  name: string;
+  parameters: GetContractStateManifestParameterResult[];
+}
+
+export interface GetContractStateManifestAbiResult {
+  methods: GetContractStateManifestMethodResult[];
+  events: GetContractStateManifestEventResult[];
+}
+
+export interface GetContractStateManifestGroupResult {
+  pubkey: string;
+  signature: string;
+}
+
+export interface GetContractStateManifestPermissionResult {
+  contract: string;
+  methods: "*" | string[];
+}
+
+export interface GetContractStateManifestResult {
+  name: string;
+  groups: GetContractStateManifestGroupResult[];
+  features: Record<string, never>;
+  supportedstandards: string[];
+  abi: GetContractStateManifestAbiResult;
+  permissions: GetContractStateManifestPermissionResult[];
+  trusts: "*" | string[];
+  extra?: unknown;
+}
+
 export interface GetContractStateResult {
   id: number;
   updatecounter: number;
   hash: string;
-  nef: Record<string, unknown>;
-  manifest: Record<string, unknown>;
+  nef: GetContractStateNefResult;
+  manifest: GetContractStateManifestResult;
 }
 
 export type GetNativeContractsResult = GetContractStateResult[];

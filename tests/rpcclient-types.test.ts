@@ -12,6 +12,12 @@ import type {
   GetCandidatesResult,
   GetContractStateResult,
   GetConnectionCountResult,
+  GetContractStateManifestAbiResult,
+  GetContractStateManifestEventResult,
+  GetContractStateManifestMethodResult,
+  GetContractStateManifestParameterResult,
+  GetContractStateNefMethodTokenResult,
+  GetContractStateNefResult,
   GetNewAddressResult,
   GetNativeContractsResult,
   GetNep11BalancesResult,
@@ -101,6 +107,13 @@ type _SubmitBlock = Assert<IsEqual<ReturnType<RpcClient["submitBlock"]>, Promise
 type _CancelTx = Assert<IsEqual<ReturnType<RpcClient["cancelTx"]>, Promise<CancelTransactionResult>>>;
 type _CancelTransaction = Assert<IsEqual<ReturnType<RpcClient["cancelTransaction"]>, Promise<CancelTransactionResult>>>;
 type _CalculateNetworkFee = Assert<IsEqual<ReturnType<RpcClient["calculateNetworkFee"]>, Promise<NetworkFeeResult>>>;
+
+type _ContractStateNef = Assert<IsEqual<GetContractStateResult["nef"], GetContractStateNefResult>>;
+type _ContractStateNefToken = Assert<IsEqual<GetContractStateNefResult["tokens"][number], GetContractStateNefMethodTokenResult>>;
+type _ContractStateManifestMethod = Assert<IsEqual<GetContractStateResult["manifest"]["abi"]["methods"][number], GetContractStateManifestMethodResult>>;
+type _ContractStateManifestEvent = Assert<IsEqual<GetContractStateResult["manifest"]["abi"]["events"][number], GetContractStateManifestEventResult>>;
+type _ContractStateManifestAbi = Assert<IsEqual<GetContractStateResult["manifest"]["abi"], GetContractStateManifestAbiResult>>;
+type _ContractStateManifestParameter = Assert<IsEqual<GetContractStateManifestMethodResult["parameters"][number], GetContractStateManifestParameterResult>>;
 
 const getBlockVerbose = (client: RpcClient) => client.getBlock("0x1", true);
 const getBlockRaw = (client: RpcClient) => client.getBlock("0x1", false);
