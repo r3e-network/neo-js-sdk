@@ -318,6 +318,8 @@ export class JsonRpc implements JsonRpcLike {
   private readonly endpoints: string[];
   private readonly timeoutMs: number;
   private readonly transport: JsonRpcTransport;
+  private readonly endpointStrategy: "first" | "round-robin";
+  private readonly retryTransportErrors: boolean;
   private nextId = 1;
   private nextEndpointIndex = 0;
 
@@ -325,6 +327,8 @@ export class JsonRpc implements JsonRpcLike {
     this.endpoints = normalizeEndpoints(endpoints);
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.transport = options.transport ?? defaultTransport;
+    this.endpointStrategy = options.endpointStrategy ?? "first";
+    this.retryTransportErrors = options.retryTransportErrors ?? false;
   }
 
   public async send<T = unknown>(method: string, params: unknown[] = []): Promise<T> {
@@ -340,11 +344,15 @@ export class JsonRpc implements JsonRpcLike {
     };
     this.nextId += 1;
 
-    const startIndex = this.nextEndpointIndex;
-    this.nextEndpointIndex = (this.nextEndpointIndex + 1) % this.endpoints.length;
+    const startIndex = this.endpointStrategy === "round-robin" ? this.nextEndpointIndex : 0;
+    if (this.endpointStrategy === "round-robin") {
+      this.nextEndpointIndex = (this.nextEndpointIndex + 1) % this.endpoints.length;
+    }
+
+    const maxAttempts = this.retryTransportErrors ? this.endpoints.length : 1;
 
     let lastTransportError: JsonRpcError | null = null;
-    for (let offset = 0; offset < this.endpoints.length; offset += 1) {
+    for (let offset = 0; offset < maxAttempts; offset += 1) {
       const endpointIndex = (startIndex + offset) % this.endpoints.length;
       const endpoint = this.endpoints[endpointIndex];
 
@@ -366,6 +374,9 @@ export class JsonRpc implements JsonRpcLike {
           RpcCode.InternalError,
           error instanceof Error ? error.message : String(error)
         );
+        if (!this.retryTransportErrors) {
+          break;
+        }
       }
     }
 

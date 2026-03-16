@@ -38,6 +38,8 @@ export type JsonRpcTransport = (
 export interface JsonRpcOptions {
   timeoutMs?: number;
   transport?: JsonRpcTransport;
+  endpointStrategy?: "first" | "round-robin";
+  retryTransportErrors?: boolean;
 }
 
 export interface RpcClientOptions extends JsonRpcOptions {

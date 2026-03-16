@@ -1,6 +1,6 @@
 {
   "name": "@r3e/neo-js",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Neo N3 JavaScript SDK inspired by r3e-network/neo-python-sdk with expanded RPC coverage.",
   "repository": {
     "type": "git",
