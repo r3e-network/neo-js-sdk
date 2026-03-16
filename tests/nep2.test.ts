@@ -21,4 +21,12 @@ describe("NEP-2", () => {
     expect(bytesToHex(key.toBytes())).toBe("7d128a6d096f0c14c3a25a2b0c41cf79661bfcb4a8cc95aaaea28bde4d732344");
     expect(encryptSecp256r1Key(key, "city of zion")).toBe(source);
   });
+
+  it("rejects invalid NEP-2 payload prefixes and checksum mismatches", () => {
+    const original = "6PYUUUFei9PBBfVkSn8q7hFCnewWFRBKPxcn6Kz6Bmk3FqWyLyuTQE2XFH";
+    const badPrefix = `7${original.slice(1)}`;
+
+    expect(() => decryptSecp256r1Key(badPrefix, "city of zion")).toThrow();
+    expect(() => decryptSecp256r1Key(original, "wrong passphrase")).toThrow(/checksum mismatch/);
+  });
 });

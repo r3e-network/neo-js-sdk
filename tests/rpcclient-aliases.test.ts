@@ -66,6 +66,8 @@ describe("rpcclient aliases", () => {
     await expect(client.get_contract_state("0xabc")).resolves.toBeNull();
     await expect(client.get_native_contracts()).resolves.toBeNull();
     await expect(client.get_peers()).resolves.toBeNull();
+    await expect(client.traverse_iterator("session", "iterator", 3)).resolves.toBeNull();
+    await expect(client.terminateSession("session")).resolves.toBeNull();
 
     expect(requests.map((request) => request.method)).toEqual([
       "getunclaimedgas",
@@ -79,7 +81,9 @@ describe("rpcclient aliases", () => {
       "getconnectioncount",
       "getcontractstate",
       "getnativecontracts",
-      "getpeers"
+      "getpeers",
+      "traverseiterator",
+      "terminatesession"
     ]);
   });
 
