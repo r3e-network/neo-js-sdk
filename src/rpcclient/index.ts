@@ -1,7 +1,7 @@
 import { bytesToBase64, hexToBytes, toUint8Array } from "../internal/bytes.js";
 import { H160, H256 } from "../core/hash.js";
 import { PublicKey } from "../core/keypair.js";
-import { Signer, Tx } from "../core/tx.js";
+import { Signer, type SignerJson, Tx } from "../core/tx.js";
 import type {
   CancelTransactionResult,
   CloseWalletResult,
@@ -167,8 +167,8 @@ function encodeStorageKey(value: Uint8Array | string): string {
   return bytesToBase64(hexToBytes(value));
 }
 
-function serializeSigners(signers: Array<Signer | { toJSON(): unknown }> = []): unknown[] {
-  return signers.map((signer) => signer.toJSON());
+function serializeSigners(signers: Array<Signer | SignerJson | Record<string, unknown>> = []): unknown[] {
+  return signers.map((signer) => ("toJSON" in signer && typeof signer.toJSON === "function" ? signer.toJSON() : signer));
 }
 
 function serializeTransferAsset(value: H160 | string): string {
@@ -386,7 +386,7 @@ export class RpcClient {
 
   public getBlock(indexOrHash: number | string, verbose: true): Promise<GetBlockVerboseResult>;
   public getBlock(indexOrHash: number | string, verbose?: false): Promise<string>;
-  public getBlock(indexOrHash: number | string, verbose = true): Promise<string | GetBlockVerboseResult> {
+  public getBlock(indexOrHash: number | string, verbose = false): Promise<string | GetBlockVerboseResult> {
     return this.send("getblock", [indexOrHash, verbose]);
   }
 
@@ -422,7 +422,7 @@ export class RpcClient {
 
   public getBlockHeader(indexOrHash: number | string, verbose: true): Promise<GetBlockHeaderVerboseResult>;
   public getBlockHeader(indexOrHash: number | string, verbose?: false): Promise<string>;
-  public getBlockHeader(indexOrHash: number | string, verbose = true): Promise<string | GetBlockHeaderVerboseResult> {
+  public getBlockHeader(indexOrHash: number | string, verbose = false): Promise<string | GetBlockHeaderVerboseResult> {
     return this.send("getblockheader", [indexOrHash, verbose]);
   }
 
@@ -560,7 +560,9 @@ export class RpcClient {
       : this.send("getrawmempool", [includeUnverified]);
   }
 
-  public getRawTransaction(hash: H256 | string, verbose = true): Promise<GetRawTransactionResult> {
+  public getRawTransaction(hash: H256 | string, verbose: true): Promise<GetRawTransactionResult>;
+  public getRawTransaction(hash: H256 | string, verbose?: false): Promise<string>;
+  public getRawTransaction(hash: H256 | string, verbose = false): Promise<string | GetRawTransactionResult> {
     return this.send("getrawtransaction", [serializeHash(hash), verbose]);
   }
 
@@ -619,8 +621,8 @@ export class RpcClient {
     return this.send("gettransactionheight", [serializeHash(hash)]);
   }
 
-  public getUnclaimedGas(address: string): Promise<GetUnclaimedGasResult> {
-    return this.send("getunclaimedgas", [address]);
+  public getUnclaimedGas(address: string): Promise<string> {
+    return this.send<GetUnclaimedGasResult>("getunclaimedgas", [address]).then((response) => response.unclaimed);
   }
 
   public getUnspents(address: string): Promise<GetUnspentsResult> {
@@ -671,7 +673,7 @@ export class RpcClient {
     contractHash: H160 | string,
     method: string,
     args: InvokeParameters | InvokeParameterJson[] = [],
-    signers: Signer[] = []
+    signers: Array<Signer | SignerJson | Record<string, unknown>> = []
   ): Promise<InvokeResult> {
     const serializedArgs = Array.isArray(args) ? args : args.toJSON();
     return this.send("invokefunction", [
@@ -686,7 +688,7 @@ export class RpcClient {
     contractHash: H160 | string,
     method: string,
     args: InvokeParameters | InvokeParameterJson[] = [],
-    signers: Signer[] = []
+    signers: Array<Signer | SignerJson | Record<string, unknown>> = []
   ): Promise<InvokeResult> {
     return this.invokeFunction(contractHash, method, args, signers);
   }
@@ -694,7 +696,7 @@ export class RpcClient {
   public invokeContractVerify(
     contractHash: H160 | string,
     args: InvokeParameters | InvokeParameterJson[] = [],
-    signers: Signer[] = []
+    signers: Array<Signer | SignerJson | Record<string, unknown>> = []
   ): Promise<InvokeContractVerifyResult> {
     const serializedArgs = Array.isArray(args) ? args : args.toJSON();
     return this.send("invokecontractverify", [
@@ -707,16 +709,16 @@ export class RpcClient {
   public invoke_contract_verify(
     contractHash: H160 | string,
     args: InvokeParameters | InvokeParameterJson[] = [],
-    signers: Signer[] = []
+    signers: Array<Signer | SignerJson | Record<string, unknown>> = []
   ): Promise<InvokeContractVerifyResult> {
     return this.invokeContractVerify(contractHash, args, signers);
   }
 
-  public invokeScript(script: Uint8Array | string, signers: Signer[] = []): Promise<InvokeResult> {
+  public invokeScript(script: Uint8Array | string, signers: Array<Signer | SignerJson | Record<string, unknown>> = []): Promise<InvokeResult> {
     return this.send("invokescript", [encodeBinary(script), serializeSigners(signers)]);
   }
 
-  public invoke_script(script: Uint8Array | string, signers: Signer[] = []): Promise<InvokeResult> {
+  public invoke_script(script: Uint8Array | string, signers: Array<Signer | SignerJson | Record<string, unknown>> = []): Promise<InvokeResult> {
     return this.invokeScript(script, signers);
   }
 
@@ -740,20 +742,20 @@ export class RpcClient {
     return this.listPlugins();
   }
 
-  public sendRawTransaction(tx: Tx | Uint8Array | string): Promise<SendRawTransactionResult> {
-    return this.send("sendrawtransaction", [encodeBinary(tx)]);
+  public sendRawTransaction(tx: Tx | Uint8Array | string): Promise<string> {
+    return this.send<SendRawTransactionResult>("sendrawtransaction", [encodeBinary(tx)]).then((response) => response.hash);
   }
 
   public send_raw_transaction(tx: Tx | Uint8Array | string): Promise<SendRawTransactionResult> {
-    return this.sendRawTransaction(tx);
-  }
-
-  public sendTx(tx: Tx | Uint8Array | string): Promise<SendRawTransactionResult> {
     return this.send("sendrawtransaction", [encodeBinary(tx)]);
   }
 
+  public sendTx(tx: Tx | Uint8Array | string): Promise<string> {
+    return this.send<SendRawTransactionResult>("sendrawtransaction", [encodeBinary(tx)]).then((response) => response.hash);
+  }
+
   public send_tx(tx: Tx | Uint8Array | string): Promise<SendRawTransactionResult> {
-    return this.sendTx(tx);
+    return this.send("sendrawtransaction", [encodeBinary(tx)]);
   }
 
   public sendFrom(
@@ -812,20 +814,20 @@ export class RpcClient {
     ]);
   }
 
-  public submitBlock(block: Uint8Array | string): Promise<SubmitBlockResult> {
-    return this.send("submitblock", [encodeBinary(block)]);
+  public submitBlock(block: Uint8Array | string): Promise<string> {
+    return this.send<SubmitBlockResult>("submitblock", [encodeBinary(block)]).then((response) => response.hash);
   }
 
   public submit_block(block: Uint8Array | string): Promise<SubmitBlockResult> {
-    return this.submitBlock(block);
+    return this.send("submitblock", [encodeBinary(block)]);
   }
 
-  public validateAddress(address: string): Promise<ValidateAddressResult> {
-    return this.send("validateaddress", [address]);
+  public validateAddress(address: string): Promise<boolean> {
+    return this.send<ValidateAddressResult>("validateaddress", [address]).then((response) => response.isvalid);
   }
 
   public validate_address(address: string): Promise<ValidateAddressResult> {
-    return this.validateAddress(address);
+    return this.send("validateaddress", [address]);
   }
 
   public cancelTx(txHash: H256 | string, signers: Array<H160 | string> = [], extraFee: bigint | number = 0): Promise<CancelTransactionResult> {
@@ -855,8 +857,8 @@ export class RpcClient {
     return this.send("canceltransaction", params);
   }
 
-  public calculateNetworkFee(tx: Tx | Uint8Array | string): Promise<NetworkFeeResult> {
-    return this.send("calculatenetworkfee", [encodeBinary(tx)]);
+  public calculateNetworkFee(tx: Tx | Uint8Array | string): Promise<string> {
+    return this.send<NetworkFeeResult>("calculatenetworkfee", [encodeBinary(tx)]).then((response) => response.networkfee);
   }
 }
 

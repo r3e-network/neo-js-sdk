@@ -198,4 +198,102 @@ describe("rpcclient", () => {
       ]
     });
   });
+
+  it("matches neon-style defaults and convenience return shapes", async () => {
+    const requests: Array<{ method: string; params: unknown[] }> = [];
+    const client = new RpcClient("http://localhost:10332", {
+      transport: async (_url, request) => {
+        requests.push({ method: request.method, params: request.params });
+        switch (request.method) {
+          case "getblock":
+            return { jsonrpc: "2.0", id: request.id, result: "raw-block" };
+          case "getblockheader":
+            return { jsonrpc: "2.0", id: request.id, result: "raw-header" };
+          case "getrawtransaction":
+            return { jsonrpc: "2.0", id: request.id, result: "raw-tx" };
+          case "sendrawtransaction":
+            return { jsonrpc: "2.0", id: request.id, result: { hash: "0xtx" } };
+          case "submitblock":
+            return { jsonrpc: "2.0", id: request.id, result: { hash: "0xblock" } };
+          case "getunclaimedgas":
+            return {
+              jsonrpc: "2.0",
+              id: request.id,
+              result: { unclaimed: "123", address: "N" }
+            };
+          case "validateaddress":
+            return {
+              jsonrpc: "2.0",
+              id: request.id,
+              result: { address: "N", isvalid: true }
+            };
+          case "calculatenetworkfee":
+            return {
+              jsonrpc: "2.0",
+              id: request.id,
+              result: { networkfee: "456" }
+            };
+          default:
+            return { jsonrpc: "2.0", id: request.id, result: null };
+        }
+      }
+    });
+
+    await expect(client.getBlock("0xabc")).resolves.toBe("raw-block");
+    await expect(client.getBlockHeader("0xabc")).resolves.toBe("raw-header");
+    await expect(client.getRawTransaction("0xabc")).resolves.toBe("raw-tx");
+    await expect(client.sendRawTransaction("AQID")).resolves.toBe("0xtx");
+    await expect(client.submitBlock("AQID")).resolves.toBe("0xblock");
+    await expect(client.getUnclaimedGas("N")).resolves.toBe("123");
+    await expect(client.validateAddress("N")).resolves.toBe(true);
+    await expect(client.calculateNetworkFee("AQID")).resolves.toBe("456");
+
+    expect(requests).toEqual([
+      { method: "getblock", params: ["0xabc", false] },
+      { method: "getblockheader", params: ["0xabc", false] },
+      { method: "getrawtransaction", params: ["0xabc", false] },
+      { method: "sendrawtransaction", params: ["AQID"] },
+      { method: "submitblock", params: ["AQID"] },
+      { method: "getunclaimedgas", params: ["N"] },
+      { method: "validateaddress", params: ["N"] },
+      { method: "calculatenetworkfee", params: ["AQID"] }
+    ]);
+  });
+
+  it("accepts plain signer json objects like neon-js", async () => {
+    const requests: Array<{ method: string; params: unknown[] }> = [];
+    const privateKey = new PrivateKey(
+      "f046222512e7258c62f56f5e9e624d08c8dc38f336a15f320b3501ec7e90d7c6"
+    );
+    const signer = new Signer({
+      account: privateKey.publicKey().getScriptHash(),
+      scopes: WitnessScope.CalledByEntry
+    }).toJSON();
+
+    const client = new RpcClient("http://localhost:10332", {
+      transport: async (_url, request) => {
+        requests.push({ method: request.method, params: request.params });
+        return { jsonrpc: "2.0", id: request.id, result: { state: "HALT", stack: [], gasconsumed: "0", script: "" } };
+      }
+    });
+
+    await client.invokeFunction(gasContractHash(), "symbol", [{ type: "String", value: "neo" }], [signer as never]);
+    await client.invokeContractVerify(gasContractHash(), [{ type: "String", value: "neo" }], [signer as never]);
+    await client.invokeScript("AQID", [signer as never]);
+
+    expect(requests).toEqual([
+      {
+        method: "invokefunction",
+        params: ["0xd2a4cff31913016155e38e474a2c06d08be276cf", "symbol", [{ type: "String", value: "neo" }], [signer]]
+      },
+      {
+        method: "invokecontractverify",
+        params: ["0xd2a4cff31913016155e38e474a2c06d08be276cf", [{ type: "String", value: "neo" }], [signer]]
+      },
+      {
+        method: "invokescript",
+        params: ["AQID", [signer]]
+      }
+    ]);
+  });
 });

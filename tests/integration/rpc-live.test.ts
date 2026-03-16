@@ -19,8 +19,7 @@ describe.runIf(runLive)("live rpc smoke", () => {
     expect(bestBlockHash).toMatch(/^0x[0-9a-f]{64}$/i);
     expect(version.useragent.length).toBeGreaterThan(0);
     expect(version.protocol.network).toBeGreaterThan(0);
-    expect(validation.address).toBe("NbTiM6h8r99kpRtb428XcsUk1TzKed2gTc");
-    expect(typeof validation.isvalid).toBe("boolean");
+    expect(typeof validation).toBe("boolean");
 
     const blockHash = await client.getBlockHash(Math.max(0, blockCount - 1));
     const header = await client.getBlockHeader(blockHash, true);

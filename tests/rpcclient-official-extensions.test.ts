@@ -44,6 +44,13 @@ describe("rpcclient official extensions", () => {
     const client = new RpcClient("http://localhost:10332", {
       transport: async (_url, request) => {
         requests.push({ method: request.method, params: request.params });
+        if (request.method === "sendrawtransaction") {
+          return {
+            jsonrpc: "2.0",
+            id: request.id,
+            result: { hash: "0xtx" }
+          };
+        }
         return {
           jsonrpc: "2.0",
           id: request.id,
@@ -153,6 +160,13 @@ describe("rpcclient official extensions", () => {
     const client = new RpcClient("http://localhost:10332", {
       transport: async (_url, request) => {
         requests.push({ method: request.method, params: request.params });
+        if (request.method === "sendrawtransaction") {
+          return {
+            jsonrpc: "2.0",
+            id: request.id,
+            result: { hash: "0xtx" }
+          };
+        }
         return {
           jsonrpc: "2.0",
           id: request.id,

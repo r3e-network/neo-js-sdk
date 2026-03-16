@@ -87,14 +87,13 @@ type _GetConnectionCount = Assert<IsEqual<ReturnType<RpcClient["getConnectionCou
 type _GetPeers = Assert<IsEqual<ReturnType<RpcClient["getPeers"]>, Promise<GetPeersResult>>>;
 type _GetVersion = Assert<IsEqual<ReturnType<RpcClient["getVersion"]>, Promise<GetVersionResult>>>;
 type _ListPlugins = Assert<IsEqual<ReturnType<RpcClient["listPlugins"]>, Promise<ListPluginsResult>>>;
-type _ValidateAddress = Assert<IsEqual<ReturnType<RpcClient["validateAddress"]>, Promise<ValidateAddressResult>>>;
+type _ValidateAddress = Assert<IsEqual<ReturnType<RpcClient["validateAddress"]>, Promise<boolean>>>;
 type _GetCandidates = Assert<IsEqual<ReturnType<RpcClient["getCandidates"]>, Promise<GetCandidatesResult>>>;
 type _GetStateRoot = Assert<IsEqual<ReturnType<RpcClient["getStateRoot"]>, Promise<GetStateRootResult>>>;
 type _GetApplicationLog = Assert<IsEqual<ReturnType<RpcClient["getApplicationLog"]>, Promise<GetApplicationLogResult>>>;
-type _GetRawTransaction = Assert<IsEqual<ReturnType<RpcClient["getRawTransaction"]>, Promise<GetRawTransactionResult>>>;
 type _InvokeFunction = Assert<IsEqual<ReturnType<RpcClient["invokeFunction"]>, Promise<InvokeResult>>>;
 type _InvokeContractVerify = Assert<IsEqual<ReturnType<RpcClient["invokeContractVerify"]>, Promise<InvokeContractVerifyResult>>>;
-type _SendRawTransaction = Assert<IsEqual<ReturnType<RpcClient["sendRawTransaction"]>, Promise<SendRawTransactionResult>>>;
+type _SendRawTransaction = Assert<IsEqual<ReturnType<RpcClient["sendRawTransaction"]>, Promise<string>>>;
 type _GetWalletBalance = Assert<IsEqual<ReturnType<RpcClient["getWalletBalance"]>, Promise<WalletBalanceResult>>>;
 type _ListAddress = Assert<IsEqual<ReturnType<RpcClient["listAddress"]>, Promise<ListAddressResult>>>;
 type _GetContractState = Assert<IsEqual<ReturnType<RpcClient["getContractState"]>, Promise<GetContractStateResult>>>;
@@ -113,7 +112,7 @@ type _GetState = Assert<IsEqual<ReturnType<RpcClient["getState"]>, Promise<GetSt
 type _GetStorage = Assert<IsEqual<ReturnType<RpcClient["getStorage"]>, Promise<GetStorageResult>>>;
 type _FindStorage = Assert<IsEqual<ReturnType<RpcClient["findStorage"]>, Promise<FindStorageResult>>>;
 type _FindStates = Assert<IsEqual<ReturnType<RpcClient["findStates"]>, Promise<FindStatesResult>>>;
-type _GetUnclaimedGas = Assert<IsEqual<ReturnType<RpcClient["getUnclaimedGas"]>, Promise<GetUnclaimedGasResult>>>;
+type _GetUnclaimedGas = Assert<IsEqual<ReturnType<RpcClient["getUnclaimedGas"]>, Promise<string>>>;
 type _OpenWallet = Assert<IsEqual<ReturnType<RpcClient["openWallet"]>, Promise<OpenWalletResult>>>;
 type _CloseWallet = Assert<IsEqual<ReturnType<RpcClient["closeWallet"]>, Promise<CloseWalletResult>>>;
 type _DumpPrivKey = Assert<IsEqual<ReturnType<RpcClient["dumpPrivKey"]>, Promise<DumpPrivKeyResult>>>;
@@ -126,10 +125,10 @@ type _TerminateSession = Assert<IsEqual<ReturnType<RpcClient["terminateSession"]
 type _SendFrom = Assert<IsEqual<ReturnType<RpcClient["sendFrom"]>, Promise<RelayTransactionResult>>>;
 type _SendMany = Assert<IsEqual<ReturnType<RpcClient["sendMany"]>, Promise<RelayTransactionResult>>>;
 type _SendToAddress = Assert<IsEqual<ReturnType<RpcClient["sendToAddress"]>, Promise<RelayTransactionResult>>>;
-type _SubmitBlock = Assert<IsEqual<ReturnType<RpcClient["submitBlock"]>, Promise<SubmitBlockResult>>>;
+type _SubmitBlock = Assert<IsEqual<ReturnType<RpcClient["submitBlock"]>, Promise<string>>>;
 type _CancelTx = Assert<IsEqual<ReturnType<RpcClient["cancelTx"]>, Promise<CancelTransactionResult>>>;
 type _CancelTransaction = Assert<IsEqual<ReturnType<RpcClient["cancelTransaction"]>, Promise<CancelTransactionResult>>>;
-type _CalculateNetworkFee = Assert<IsEqual<ReturnType<RpcClient["calculateNetworkFee"]>, Promise<NetworkFeeResult>>>;
+type _CalculateNetworkFee = Assert<IsEqual<ReturnType<RpcClient["calculateNetworkFee"]>, Promise<string>>>;
 
 type _ContractStateNef = Assert<IsEqual<GetContractStateResult["nef"], GetContractStateNefResult>>;
 type _ContractStateNefToken = Assert<IsEqual<GetContractStateNefResult["tokens"][number], GetContractStateNefMethodTokenResult>>;
@@ -164,10 +163,14 @@ const getBlockVerbose = (client: RpcClient) => client.getBlock("0x1", true);
 const getBlockRaw = (client: RpcClient) => client.getBlock("0x1", false);
 const getBlockHeaderVerbose = (client: RpcClient) => client.getBlockHeader("0x1", true);
 const getBlockHeaderRaw = (client: RpcClient) => client.getBlockHeader("0x1", false);
+const getRawTransactionVerbose = (client: RpcClient) => client.getRawTransaction("0x1", true);
+const getRawTransactionRaw = (client: RpcClient) => client.getRawTransaction("0x1", false);
 type _GetBlockVerbose = Assert<IsEqual<ReturnType<typeof getBlockVerbose>, Promise<GetBlockVerboseResult>>>;
 type _GetBlockRaw = Assert<IsEqual<ReturnType<typeof getBlockRaw>, Promise<string>>>;
 type _GetBlockHeaderVerbose = Assert<IsEqual<ReturnType<typeof getBlockHeaderVerbose>, Promise<GetBlockHeaderVerboseResult>>>;
 type _GetBlockHeaderRaw = Assert<IsEqual<ReturnType<typeof getBlockHeaderRaw>, Promise<string>>>;
+type _GetRawTransactionVerbose = Assert<IsEqual<ReturnType<typeof getRawTransactionVerbose>, Promise<GetRawTransactionResult>>>;
+type _GetRawTransactionRaw = Assert<IsEqual<ReturnType<typeof getRawTransactionRaw>, Promise<string>>>;
 type _GetUnspents = Assert<IsEqual<ReturnType<RpcClient["getUnspents"]>, Promise<GetUnspentsResult>>>;
 
 describe("rpc client types", () => {
