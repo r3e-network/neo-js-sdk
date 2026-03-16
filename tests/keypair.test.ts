@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PrivateKey, PublicKey, deserialize, serialize } from "../src/index.js";
+import { H160, PrivateKey, PublicKey, deserialize, serialize } from "../src/index.js";
 
 describe("keypair", () => {
   it("supports private keys from bytes and integers and verifies signatures", () => {
@@ -23,5 +23,19 @@ describe("keypair", () => {
     const decoded = deserialize(serialize(key), PublicKey);
     expect(decoded.toString()).toBe(key.toString());
     expect(decoded.to_bytes()).toEqual(key.to_bytes());
+  });
+
+  it("rejects invalid public key encodings and covers equality with string inputs", () => {
+    const key = new PrivateKey(
+      "f046222512e7258c62f56f5e9e624d08c8dc38f336a15f320b3501ec7e90d7c6"
+    ).publicKey();
+
+    expect(key.equals(key.toString())).toBe(true);
+    expect(() => PublicKey.unmarshalFrom(new (class {
+      readUInt8() { return 0x01; }
+      read() { return new Uint8Array(); }
+    })() as never)).toThrow(/unexpected PublicKey prefix/);
+    expect(() => new PublicKey("abcd")).toThrow();
+    expect(() => new H160("0x01")).toThrow();
   });
 });
