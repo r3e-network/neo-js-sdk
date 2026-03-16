@@ -1,4 +1,4 @@
-# neo-js
+# @r3e/neo-js
 
 Neo N3 JavaScript/TypeScript SDK inspired by `r3e-network/neo-python-sdk` and extended with a broader typed RPC surface.
 
@@ -15,7 +15,7 @@ Neo N3 JavaScript/TypeScript SDK inspired by `r3e-network/neo-python-sdk` and ex
 ## Install
 
 ```bash
-npm install neo-js
+npm install @r3e/neo-js
 ```
 
 ## Usage
@@ -32,7 +32,7 @@ import {
   WitnessScope,
   gasContractHash,
   testNetworkId
-} from "neo-js";
+} from "@r3e/neo-js";
 
 const privateKey = new PrivateKey(
   "f046222512e7258c62f56f5e9e624d08c8dc38f336a15f320b3501ec7e90d7c6"
@@ -75,7 +75,7 @@ const invoke = await client.invokeFunction(
 ## Wallet Helpers
 
 ```ts
-import { Wallet } from "neo-js";
+import { Wallet } from "@r3e/neo-js";
 
 const wallet = new Wallet({ name: "demo", passphrase: "secret" });
 const account = await wallet.createAccount();
