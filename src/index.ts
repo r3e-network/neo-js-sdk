@@ -105,6 +105,17 @@ export {
   testnet_endpoints,
   testnetEndpoints
 } from "./rpcclient/index.js";
+export {
+  buildStackParser,
+  parseInvokeStack,
+  parseStackItemArray,
+  parseStackItemBoolean,
+  parseStackItemBytes,
+  parseStackItemInteger,
+  parseStackItemMap,
+  parseStackItemStruct,
+  parseStackItemUtf8
+} from "./rpcclient/parse.js";
 export type {
   CancelTransactionResult,
   CloseWalletResult,
