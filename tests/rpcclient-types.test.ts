@@ -18,6 +18,7 @@ import type {
   GetContractStateManifestParameterResult,
   GetContractStateNefMethodTokenResult,
   GetContractStateNefResult,
+  GetNep11PropertyValueResult,
   GetNewAddressResult,
   GetNativeContractsResult,
   GetNep11BalancesResult,
@@ -36,10 +37,16 @@ import type {
   GetUnclaimedGasResult,
   GetUnspentsResult,
   GetVersionResult,
+  GetVersionRpcSettingsResult,
   GetWalletUnclaimedGasResult,
   ImportPrivKeyResult,
   InvokeContractVerifyResult,
+  InvokeDiagnosticsInvocationTree,
+  InvokeDiagnosticsResult,
+  InvokeDiagnosticsStorageChange,
   InvokeResult,
+  PendingSignatureContextItem,
+  PendingSignatureResult,
   ListAddressResult,
   ListPluginsResult,
   NetworkFeeResult,
@@ -114,6 +121,13 @@ type _ContractStateManifestMethod = Assert<IsEqual<GetContractStateResult["manif
 type _ContractStateManifestEvent = Assert<IsEqual<GetContractStateResult["manifest"]["abi"]["events"][number], GetContractStateManifestEventResult>>;
 type _ContractStateManifestAbi = Assert<IsEqual<GetContractStateResult["manifest"]["abi"], GetContractStateManifestAbiResult>>;
 type _ContractStateManifestParameter = Assert<IsEqual<GetContractStateManifestMethodResult["parameters"][number], GetContractStateManifestParameterResult>>;
+type _GetVersionRpc = Assert<IsEqual<NonNullable<GetVersionResult["rpc"]>, GetVersionRpcSettingsResult>>;
+type _InvokeDiagnostics = Assert<IsEqual<NonNullable<InvokeResult["diagnostics"]>, InvokeDiagnosticsResult>>;
+type _InvokeInvocationTree = Assert<IsEqual<InvokeDiagnosticsResult["invokedcontracts"], InvokeDiagnosticsInvocationTree>>;
+type _InvokeStorageChange = Assert<IsEqual<InvokeDiagnosticsResult["storagechanges"][number], InvokeDiagnosticsStorageChange>>;
+type _PendingSignature = Assert<IsEqual<NonNullable<InvokeResult["pendingsignature"]>, PendingSignatureResult>>;
+type _PendingSignatureItem = Assert<IsEqual<PendingSignatureResult["items"][string], PendingSignatureContextItem>>;
+type _Nep11Properties = Assert<IsEqual<GetNep11PropertiesResult[string], GetNep11PropertyValueResult>>;
 
 const getBlockVerbose = (client: RpcClient) => client.getBlock("0x1", true);
 const getBlockRaw = (client: RpcClient) => client.getBlock("0x1", false);

@@ -205,7 +205,8 @@ export interface GetNep11BalancesResult {
   balance: Nep11Balance[];
 }
 
-export type GetNep11PropertiesResult = Record<string, unknown>;
+export type GetNep11PropertyValueResult = string | null;
+export type GetNep11PropertiesResult = Record<string, GetNep11PropertyValueResult>;
 
 export interface Nep11TransferEvent {
   timestamp: number;
@@ -290,7 +291,12 @@ export interface GetVersionResult {
   nonce: number;
   useragent: string;
   protocol: GetVersionProtocolResult;
-  rpc?: Record<string, unknown>;
+  rpc?: GetVersionRpcSettingsResult;
+}
+
+export interface GetVersionRpcSettingsResult {
+  maxiteratorresultitems: number;
+  sessionenabled: boolean;
 }
 
 export interface RpcPlugin {
@@ -416,8 +422,38 @@ export interface InvokeResult<TStackItem = RpcStackItemJson> {
   tx?: string;
   notifications?: RpcNotification[];
   session?: string;
-  diagnostics?: unknown;
-  pendingsignature?: unknown;
+  diagnostics?: InvokeDiagnosticsResult;
+  pendingsignature?: PendingSignatureResult;
+}
+
+export interface InvokeDiagnosticsInvocationTree {
+  hash: string;
+  call?: InvokeDiagnosticsInvocationTree[];
+}
+
+export interface InvokeDiagnosticsStorageChange {
+  state: string;
+  key: string;
+  value: string;
+}
+
+export interface InvokeDiagnosticsResult {
+  invokedcontracts: InvokeDiagnosticsInvocationTree;
+  storagechanges: InvokeDiagnosticsStorageChange[];
+}
+
+export interface PendingSignatureContextItem {
+  script: string | null;
+  parameters: InvokeParameterJson[];
+  signatures: Record<string, string>;
+}
+
+export interface PendingSignatureResult {
+  type: string;
+  hash: string;
+  data: string;
+  items: Record<string, PendingSignatureContextItem>;
+  network: number;
 }
 
 export type InvokeContractVerifyResult<TStackItem = RpcStackItemJson> = InvokeResult<TStackItem>;
