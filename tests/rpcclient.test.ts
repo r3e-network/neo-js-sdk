@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { sc, u } from "@cityofzion/neon-core";
 import {
   H160,
   InvokeParameters,
@@ -294,6 +295,69 @@ describe("rpcclient", () => {
         method: "invokescript",
         params: ["AQID", [signer]]
       }
+    ]);
+  });
+
+  it("accepts neon-js HexString and ContractParam inputs", async () => {
+    const requests: Array<{ method: string; params: unknown[] }> = [];
+    const client = new RpcClient("http://localhost:10332", {
+      transport: async (_url, request) => {
+        requests.push({ method: request.method, params: request.params });
+        return {
+          jsonrpc: "2.0",
+          id: request.id,
+          result: {
+            hash: "0xtx",
+            state: "HALT",
+            stack: [],
+            gasconsumed: "0",
+            script: ""
+          }
+        };
+      }
+    });
+
+    const hexScript = u.HexString.fromHex("010203");
+    const contractParams = [
+      sc.ContractParam.string("neo"),
+      sc.ContractParam.integer(42)
+    ];
+
+    await client.invokeFunction(gasContractHash(), "symbol", contractParams);
+    await client.invokeContractVerify(gasContractHash(), contractParams);
+    await client.invokeScript(hexScript);
+    await client.sendRawTransaction(hexScript);
+    await client.submitBlock(hexScript);
+    await client.calculateNetworkFee(hexScript);
+
+    expect(requests).toEqual([
+      {
+        method: "invokefunction",
+        params: [
+          "0xd2a4cff31913016155e38e474a2c06d08be276cf",
+          "symbol",
+          [
+            { type: "String", value: "neo" },
+            { type: "Integer", value: "42" }
+          ],
+          []
+        ]
+      },
+      {
+        method: "invokecontractverify",
+        params: [
+          "0xd2a4cff31913016155e38e474a2c06d08be276cf",
+          [
+            { type: "String", value: "neo" },
+            { type: "Integer", value: "42" }
+          ],
+          []
+        ]
+      },
+      { method: "invokescript", params: ["AQID", []] },
+      { method: "sendrawtransaction", params: ["AQID"] },
+      { method: "submitblock", params: ["AQID"] },
+      { method: "calculatenetworkfee", params: ["AQID"] }
     ]);
   });
 });

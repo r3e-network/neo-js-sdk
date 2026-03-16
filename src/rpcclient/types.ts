@@ -53,6 +53,14 @@ export interface InvokeParameterJson {
   value?: unknown;
 }
 
+export interface Base64Encodable {
+  toBase64(asLittleEndian?: boolean): string;
+}
+
+export interface ContractParamLikeJson {
+  toJson(): InvokeParameterJson;
+}
+
 export type GetBlockHeaderCountResult = number;
 export type GetConnectionCountResult = number;
 export type TransactionJsonResult = ReturnType<Tx["toJSON"]>;

@@ -44,6 +44,28 @@ describe("JsonRpc endpoints", () => {
     expect(seen).toEqual(["http://one"]);
   });
 
+  it("does not retry server internal-error rpc responses on another endpoint", async () => {
+    const seen: string[] = [];
+    const jsonrpc = new JsonRpc(["http://one", "http://two"], {
+      transport: async (url, request) => {
+        seen.push(url);
+        return {
+          jsonrpc: "2.0",
+          id: request.id,
+          error: {
+            code: RpcCode.InternalError,
+            message: "server fault"
+          }
+        };
+      }
+    });
+
+    await expect(jsonrpc.send("fault")).rejects.toEqual(
+      new JsonRpcError(RpcCode.InternalError, "server fault")
+    );
+    expect(seen).toEqual(["http://one"]);
+  });
+
   it("rotates the starting endpoint between successful calls", async () => {
     const seen: string[] = [];
     const jsonrpc = new JsonRpc(["http://one", "http://two", "http://three"], {
