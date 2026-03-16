@@ -1,5 +1,5 @@
 {
-  "name": "neo-js-sdk",
+  "name": "neo-js",
   "version": "0.1.0",
   "description": "Neo N3 JavaScript SDK inspired by r3e-network/neo-python-sdk with expanded RPC coverage.",
   "repository": {
