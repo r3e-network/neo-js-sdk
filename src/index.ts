@@ -95,7 +95,9 @@ export type {
   ApplicationLogExecution,
   ApplicationLogInvocation,
   GetApplicationLogResult,
+  GetBlockHeaderVerboseResult,
   GetBlockHeaderCountResult,
+  GetBlockVerboseResult,
   GetCandidatesResult,
   GetContractStateResult,
   GetConnectionCountResult,
@@ -115,6 +117,7 @@ export type {
   GetStorageResult,
   GetStateRootResult,
   GetUnclaimedGasResult,
+  GetUnspentsResult,
   GetWalletUnclaimedGasResult,
   GetNewAddressResult,
   GetVersionProtocolResult,
@@ -143,7 +146,10 @@ export type {
   SendRawTransactionResult,
   SubmitBlockResult,
   TerminateSessionResult,
+  TransactionJsonResult,
   TraverseIteratorResult,
+  UnspentBalance,
+  UnspentTransaction,
   ValidateAddressResult,
   WalletBalanceResult
 } from "./rpcclient/types.js";

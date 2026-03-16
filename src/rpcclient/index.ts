@@ -9,7 +9,9 @@ import type {
   FindStatesResult,
   FindStorageResult,
   GetApplicationLogResult,
+  GetBlockHeaderVerboseResult,
   GetBlockHeaderCountResult,
+  GetBlockVerboseResult,
   GetCandidatesResult,
   GetContractStateResult,
   GetConnectionCountResult,
@@ -28,6 +30,7 @@ import type {
   GetStorageResult,
   GetStateRootResult,
   GetUnclaimedGasResult,
+  GetUnspentsResult,
   GetVersionResult,
   GetWalletUnclaimedGasResult,
   GetNewAddressResult,
@@ -381,12 +384,16 @@ export class RpcClient {
     return this.getBestBlockHash();
   }
 
-  public getBlock(indexOrHash: number | string, verbose = true): Promise<unknown> {
+  public getBlock(indexOrHash: number | string, verbose: true): Promise<GetBlockVerboseResult>;
+  public getBlock(indexOrHash: number | string, verbose?: false): Promise<string>;
+  public getBlock(indexOrHash: number | string, verbose = true): Promise<string | GetBlockVerboseResult> {
     return this.send("getblock", [indexOrHash, verbose]);
   }
 
-  public get_block(indexOrHash: number | string, verbose = true): Promise<unknown> {
-    return this.getBlock(indexOrHash, verbose);
+  public get_block(indexOrHash: number | string, verbose: true): Promise<GetBlockVerboseResult>;
+  public get_block(indexOrHash: number | string, verbose?: false): Promise<string>;
+  public get_block(indexOrHash: number | string, verbose = true): Promise<string | GetBlockVerboseResult> {
+    return verbose ? this.getBlock(indexOrHash, true) : this.getBlock(indexOrHash, false);
   }
 
   public getBlockCount(): Promise<number> {
@@ -413,12 +420,16 @@ export class RpcClient {
     return this.getBlockHash(blockIndex);
   }
 
-  public getBlockHeader(indexOrHash: number | string, verbose = true): Promise<unknown> {
+  public getBlockHeader(indexOrHash: number | string, verbose: true): Promise<GetBlockHeaderVerboseResult>;
+  public getBlockHeader(indexOrHash: number | string, verbose?: false): Promise<string>;
+  public getBlockHeader(indexOrHash: number | string, verbose = true): Promise<string | GetBlockHeaderVerboseResult> {
     return this.send("getblockheader", [indexOrHash, verbose]);
   }
 
-  public get_block_header(indexOrHash: number | string, verbose = true): Promise<unknown> {
-    return this.getBlockHeader(indexOrHash, verbose);
+  public get_block_header(indexOrHash: number | string, verbose: true): Promise<GetBlockHeaderVerboseResult>;
+  public get_block_header(indexOrHash: number | string, verbose?: false): Promise<string>;
+  public get_block_header(indexOrHash: number | string, verbose = true): Promise<string | GetBlockHeaderVerboseResult> {
+    return verbose ? this.getBlockHeader(indexOrHash, true) : this.getBlockHeader(indexOrHash, false);
   }
 
   public getApplicationLog(hash: H256 | string, trigger?: string): Promise<GetApplicationLogResult> {
@@ -584,7 +595,7 @@ export class RpcClient {
     return this.send("getunclaimedgas", [address]);
   }
 
-  public getUnspents(address: string): Promise<unknown> {
+  public getUnspents(address: string): Promise<GetUnspentsResult> {
     return this.send("getunspents", [address]);
   }
 

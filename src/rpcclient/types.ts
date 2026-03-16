@@ -54,6 +54,7 @@ export interface InvokeParameterJson {
 
 export type GetBlockHeaderCountResult = number;
 export type GetConnectionCountResult = number;
+export type TransactionJsonResult = ReturnType<Tx["toJSON"]>;
 
 export interface RpcStackItemJson {
   type: string;
@@ -92,6 +93,26 @@ export interface GetApplicationLogResult {
   txid?: string;
   blockhash?: string;
   executions: ApplicationLogExecution[];
+}
+
+export interface GetBlockHeaderVerboseResult {
+  hash: string;
+  size: number;
+  version: number;
+  previousblockhash: string;
+  merkleroot: string;
+  time: number;
+  nonce: string;
+  index: number;
+  primary: number;
+  nextconsensus: string;
+  witnesses: RpcWitnessJson[];
+  confirmations: number;
+  nextblockhash?: string;
+}
+
+export interface GetBlockVerboseResult extends GetBlockHeaderVerboseResult {
+  tx: TransactionJsonResult[];
 }
 
 export interface GetContractStateResult {
@@ -304,6 +325,25 @@ export interface FindStatesResult {
 export interface GetUnclaimedGasResult {
   unclaimed: string;
   address: string;
+}
+
+export interface UnspentTransaction {
+  txid: string;
+  n: number;
+  value: number | string;
+}
+
+export interface UnspentBalance {
+  unspent: UnspentTransaction[];
+  assethash: string;
+  asset?: string;
+  asset_symbol?: string;
+  amount: number | string;
+}
+
+export interface GetUnspentsResult {
+  address: string;
+  balance: UnspentBalance[];
 }
 
 export interface InvokeResult<TStackItem = RpcStackItemJson> {

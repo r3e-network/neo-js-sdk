@@ -6,7 +6,9 @@ import type {
   FindStatesResult,
   FindStorageResult,
   GetApplicationLogResult,
+  GetBlockHeaderVerboseResult,
   GetBlockHeaderCountResult,
+  GetBlockVerboseResult,
   GetCandidatesResult,
   GetContractStateResult,
   GetConnectionCountResult,
@@ -26,6 +28,7 @@ import type {
   GetStorageResult,
   GetStateRootResult,
   GetUnclaimedGasResult,
+  GetUnspentsResult,
   GetVersionResult,
   GetWalletUnclaimedGasResult,
   ImportPrivKeyResult,
@@ -98,6 +101,16 @@ type _SubmitBlock = Assert<IsEqual<ReturnType<RpcClient["submitBlock"]>, Promise
 type _CancelTx = Assert<IsEqual<ReturnType<RpcClient["cancelTx"]>, Promise<CancelTransactionResult>>>;
 type _CancelTransaction = Assert<IsEqual<ReturnType<RpcClient["cancelTransaction"]>, Promise<CancelTransactionResult>>>;
 type _CalculateNetworkFee = Assert<IsEqual<ReturnType<RpcClient["calculateNetworkFee"]>, Promise<NetworkFeeResult>>>;
+
+const getBlockVerbose = (client: RpcClient) => client.getBlock("0x1", true);
+const getBlockRaw = (client: RpcClient) => client.getBlock("0x1", false);
+const getBlockHeaderVerbose = (client: RpcClient) => client.getBlockHeader("0x1", true);
+const getBlockHeaderRaw = (client: RpcClient) => client.getBlockHeader("0x1", false);
+type _GetBlockVerbose = Assert<IsEqual<ReturnType<typeof getBlockVerbose>, Promise<GetBlockVerboseResult>>>;
+type _GetBlockRaw = Assert<IsEqual<ReturnType<typeof getBlockRaw>, Promise<string>>>;
+type _GetBlockHeaderVerbose = Assert<IsEqual<ReturnType<typeof getBlockHeaderVerbose>, Promise<GetBlockHeaderVerboseResult>>>;
+type _GetBlockHeaderRaw = Assert<IsEqual<ReturnType<typeof getBlockHeaderRaw>, Promise<string>>>;
+type _GetUnspents = Assert<IsEqual<ReturnType<RpcClient["getUnspents"]>, Promise<GetUnspentsResult>>>;
 
 describe("rpc client types", () => {
   it("exposes typed return values for core rpc methods", () => {
