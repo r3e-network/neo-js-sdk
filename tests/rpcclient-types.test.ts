@@ -37,6 +37,7 @@ import type {
   GetUnclaimedGasResult,
   GetUnspentsResult,
   GetVersionResult,
+  GetVersionHardforkResult,
   GetVersionRpcSettingsResult,
   GetWalletUnclaimedGasResult,
   ImportPrivKeyResult,
@@ -122,12 +123,16 @@ type _ContractStateManifestEvent = Assert<IsEqual<GetContractStateResult["manife
 type _ContractStateManifestAbi = Assert<IsEqual<GetContractStateResult["manifest"]["abi"], GetContractStateManifestAbiResult>>;
 type _ContractStateManifestParameter = Assert<IsEqual<GetContractStateManifestMethodResult["parameters"][number], GetContractStateManifestParameterResult>>;
 type _GetVersionRpc = Assert<IsEqual<NonNullable<GetVersionResult["rpc"]>, GetVersionRpcSettingsResult>>;
+type _GetVersionHardfork = Assert<IsEqual<NonNullable<GetVersionResult["protocol"]["hardforks"]>[number], GetVersionHardforkResult>>;
 type _InvokeDiagnostics = Assert<IsEqual<NonNullable<InvokeResult["diagnostics"]>, InvokeDiagnosticsResult>>;
 type _InvokeInvocationTree = Assert<IsEqual<InvokeDiagnosticsResult["invokedcontracts"], InvokeDiagnosticsInvocationTree>>;
 type _InvokeStorageChange = Assert<IsEqual<InvokeDiagnosticsResult["storagechanges"][number], InvokeDiagnosticsStorageChange>>;
 type _PendingSignature = Assert<IsEqual<NonNullable<InvokeResult["pendingsignature"]>, PendingSignatureResult>>;
 type _PendingSignatureItem = Assert<IsEqual<PendingSignatureResult["items"][string], PendingSignatureContextItem>>;
 type _Nep11Properties = Assert<IsEqual<GetNep11PropertiesResult[string], GetNep11PropertyValueResult>>;
+type _SignerRules = Assert<IsEqual<NonNullable<GetRawTransactionResult["signers"][number]["rules"]>[number], ReturnType<import("../src/index.js").WitnessRule["toJSON"]>>>;
+type _RawTxAttributes = Assert<IsEqual<GetRawTransactionResult["attributes"][number], ReturnType<import("../src/index.js").TxAttribute["toJSON"]>>>;
+type _RelayTxAttributes = Assert<IsEqual<RelayTransactionResult["attributes"][number], ReturnType<import("../src/index.js").TxAttribute["toJSON"]>>>;
 
 const getBlockVerbose = (client: RpcClient) => client.getBlock("0x1", true);
 const getBlockRaw = (client: RpcClient) => client.getBlock("0x1", false);

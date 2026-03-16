@@ -131,6 +131,7 @@ export type {
   GetWalletUnclaimedGasResult,
   GetNewAddressResult,
   GetVersionProtocolResult,
+  GetVersionHardforkResult,
   GetVersionRpcSettingsResult,
   GetVersionResult,
   ImportPrivKeyResult,
