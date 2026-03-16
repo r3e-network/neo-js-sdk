@@ -29,6 +29,7 @@ import type {
   GetPeersResult,
   GetProofResult,
   GetRawMemPoolResult,
+  GetRawMemPoolVerboseResult,
   GetRawTransactionResult,
   GetStateResult,
   GetStateHeightResult,
@@ -104,7 +105,6 @@ type _GetNep11Transfers = Assert<IsEqual<ReturnType<RpcClient["getNep11Transfers
 type _GetNep17Balances = Assert<IsEqual<ReturnType<RpcClient["getNep17Balances"]>, Promise<GetNep17BalancesResult>>>;
 type _GetNep17Transfers = Assert<IsEqual<ReturnType<RpcClient["getNep17Transfers"]>, Promise<GetNep17TransfersResult>>>;
 type _GetNextBlockValidators = Assert<IsEqual<ReturnType<RpcClient["getNextBlockValidators"]>, Promise<GetCandidatesResult>>>;
-type _GetRawMemPool = Assert<IsEqual<ReturnType<RpcClient["getRawMemPool"]>, Promise<GetRawMemPoolResult>>>;
 type _GetStateHeight = Assert<IsEqual<ReturnType<RpcClient["getStateHeight"]>, Promise<GetStateHeightResult>>>;
 type _GetProof = Assert<IsEqual<ReturnType<RpcClient["getProof"]>, Promise<GetProofResult>>>;
 type _VerifyProof = Assert<IsEqual<ReturnType<RpcClient["verifyProof"]>, Promise<GetProofResult>>>;
@@ -165,12 +165,16 @@ const getBlockHeaderVerbose = (client: RpcClient) => client.getBlockHeader("0x1"
 const getBlockHeaderRaw = (client: RpcClient) => client.getBlockHeader("0x1", false);
 const getRawTransactionVerbose = (client: RpcClient) => client.getRawTransaction("0x1", true);
 const getRawTransactionRaw = (client: RpcClient) => client.getRawTransaction("0x1", false);
+const getRawMemPoolDefault = (client: RpcClient) => client.getRawMemPool();
+const getRawMemPoolVerbose = (client: RpcClient) => client.getRawMemPool(true);
 type _GetBlockVerbose = Assert<IsEqual<ReturnType<typeof getBlockVerbose>, Promise<GetBlockVerboseResult>>>;
 type _GetBlockRaw = Assert<IsEqual<ReturnType<typeof getBlockRaw>, Promise<string>>>;
 type _GetBlockHeaderVerbose = Assert<IsEqual<ReturnType<typeof getBlockHeaderVerbose>, Promise<GetBlockHeaderVerboseResult>>>;
 type _GetBlockHeaderRaw = Assert<IsEqual<ReturnType<typeof getBlockHeaderRaw>, Promise<string>>>;
 type _GetRawTransactionVerbose = Assert<IsEqual<ReturnType<typeof getRawTransactionVerbose>, Promise<GetRawTransactionResult>>>;
 type _GetRawTransactionRaw = Assert<IsEqual<ReturnType<typeof getRawTransactionRaw>, Promise<string>>>;
+type _GetRawMemPoolDefault = Assert<IsEqual<ReturnType<typeof getRawMemPoolDefault>, Promise<string[]>>>;
+type _GetRawMemPoolVerbose = Assert<IsEqual<ReturnType<typeof getRawMemPoolVerbose>, Promise<GetRawMemPoolVerboseResult>>>;
 type _GetUnspents = Assert<IsEqual<ReturnType<RpcClient["getUnspents"]>, Promise<GetUnspentsResult>>>;
 
 describe("rpc client types", () => {

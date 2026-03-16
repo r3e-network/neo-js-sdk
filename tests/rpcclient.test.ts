@@ -250,9 +250,9 @@ describe("rpcclient", () => {
     await expect(client.calculateNetworkFee("AQID")).resolves.toBe("456");
 
     expect(requests).toEqual([
-      { method: "getblock", params: ["0xabc", false] },
-      { method: "getblockheader", params: ["0xabc", false] },
-      { method: "getrawtransaction", params: ["0xabc", false] },
+      { method: "getblock", params: ["0xabc", 0] },
+      { method: "getblockheader", params: ["0xabc", 0] },
+      { method: "getrawtransaction", params: ["0xabc", 0] },
       { method: "sendrawtransaction", params: ["AQID"] },
       { method: "submitblock", params: ["AQID"] },
       { method: "getunclaimedgas", params: ["N"] },
@@ -277,11 +277,11 @@ describe("rpcclient", () => {
     await client.getRawMemPool(1 as never);
 
     expect(requests).toEqual([
-      { method: "getblock", params: ["0xabc", true] },
-      { method: "getblockheader", params: ["0xabc", false] },
-      { method: "getrawtransaction", params: ["0xabc", true] },
-      { method: "getrawmempool", params: [false] },
-      { method: "getrawmempool", params: [true] }
+      { method: "getblock", params: ["0xabc", 1] },
+      { method: "getblockheader", params: ["0xabc", 0] },
+      { method: "getrawtransaction", params: ["0xabc", 1] },
+      { method: "getrawmempool", params: [0] },
+      { method: "getrawmempool", params: [1] }
     ]);
   });
 

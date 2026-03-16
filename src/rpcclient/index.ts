@@ -27,6 +27,7 @@ import type {
   GetPeersResult,
   GetProofResult,
   GetRawMemPoolResult,
+  GetRawMemPoolVerboseResult,
   GetRawTransactionResult,
   GetStateHeightResult,
   GetStateResult,
@@ -192,8 +193,11 @@ function serializeTransferValue(value: bigint | number | string): string {
   return typeof value === "string" ? value : BigInt(value).toString();
 }
 
-function normalizeBooleanLike(value: BooleanLikeParam): boolean {
-  return value === true || value === 1;
+function serializeBooleanLike(value: BooleanLikeParam): 0 | 1 | boolean {
+  if (value === 0 || value === 1) {
+    return value;
+  }
+  return value;
 }
 
 export function mainnetEndpoints(): string[] {
@@ -410,14 +414,14 @@ export class RpcClient {
 
   public getBlock(indexOrHash: number | string, verbose: true | 1): Promise<GetBlockVerboseResult>;
   public getBlock(indexOrHash: number | string, verbose?: false | 0): Promise<string>;
-  public getBlock(indexOrHash: number | string, verbose: BooleanLikeParam = false): Promise<string | GetBlockVerboseResult> {
-    return this.send("getblock", [indexOrHash, normalizeBooleanLike(verbose)]);
+  public getBlock(indexOrHash: number | string, verbose: BooleanLikeParam = 0): Promise<string | GetBlockVerboseResult> {
+    return this.send("getblock", [indexOrHash, serializeBooleanLike(verbose)]);
   }
 
   public get_block(indexOrHash: number | string, verbose: true | 1): Promise<GetBlockVerboseResult>;
   public get_block(indexOrHash: number | string, verbose?: false | 0): Promise<string>;
   public get_block(indexOrHash: number | string, verbose: BooleanLikeParam = true): Promise<string | GetBlockVerboseResult> {
-    return normalizeBooleanLike(verbose) ? this.getBlock(indexOrHash, true) : this.getBlock(indexOrHash, false);
+    return (verbose === true || verbose === 1) ? this.getBlock(indexOrHash, true) : this.getBlock(indexOrHash, false);
   }
 
   public getBlockCount(): Promise<number> {
@@ -446,8 +450,8 @@ export class RpcClient {
 
   public getBlockHeader(indexOrHash: number | string, verbose: true | 1): Promise<GetBlockHeaderVerboseResult>;
   public getBlockHeader(indexOrHash: number | string, verbose?: false | 0): Promise<string>;
-  public getBlockHeader(indexOrHash: number | string, verbose: BooleanLikeParam = false): Promise<string | GetBlockHeaderVerboseResult> {
-    return this.send("getblockheader", [indexOrHash, normalizeBooleanLike(verbose)]);
+  public getBlockHeader(indexOrHash: number | string, verbose: BooleanLikeParam = 0): Promise<string | GetBlockHeaderVerboseResult> {
+    return this.send("getblockheader", [indexOrHash, serializeBooleanLike(verbose)]);
   }
 
   public get_block_header(indexOrHash: number | string, verbose: true | 1): Promise<GetBlockHeaderVerboseResult>;
@@ -467,7 +471,7 @@ export class RpcClient {
           ? indexOrHashOrOptions.block_hash.toString()
           : indexOrHashOrOptions.block_hash ?? null;
       const height = indexOrHashOrOptions.height ?? null;
-      const resolvedVerbose = normalizeBooleanLike(indexOrHashOrOptions.verbose ?? true);
+      const resolvedVerbose = indexOrHashOrOptions.verbose ?? true;
 
       if (blockHash === null && height === null) {
         return Promise.reject(new JsonRpcError(RpcCode.InvalidParams, "block_hash and height cannot be both None"));
@@ -476,7 +480,7 @@ export class RpcClient {
         return Promise.reject(new JsonRpcError(RpcCode.InvalidParams, "block_hash and height cannot be both set"));
       }
 
-      return resolvedVerbose
+      return (resolvedVerbose === true || resolvedVerbose === 1)
         ? this.getBlockHeader(blockHash ?? height!, true)
         : this.getBlockHeader(blockHash ?? height!, false);
     }
@@ -578,16 +582,16 @@ export class RpcClient {
     return this.getPeers();
   }
 
-  public getRawMemPool(includeUnverified: true | 1): Promise<GetRawMemPoolResult>;
-  public getRawMemPool(includeUnverified?: false | 0): Promise<GetRawMemPoolResult>;
-  public getRawMemPool(includeUnverified: BooleanLikeParam = false): Promise<GetRawMemPoolResult> {
-    return this.send("getrawmempool", [normalizeBooleanLike(includeUnverified)]);
+  public getRawMemPool(includeUnverified: true | 1): Promise<GetRawMemPoolVerboseResult>;
+  public getRawMemPool(includeUnverified?: false | 0): Promise<string[]>;
+  public getRawMemPool(includeUnverified: BooleanLikeParam = 0): Promise<GetRawMemPoolResult> {
+    return this.send("getrawmempool", [serializeBooleanLike(includeUnverified)]);
   }
 
   public getRawTransaction(hash: H256 | string, verbose: true | 1): Promise<GetRawTransactionResult>;
   public getRawTransaction(hash: H256 | string, verbose?: false | 0): Promise<string>;
-  public getRawTransaction(hash: H256 | string, verbose: BooleanLikeParam = false): Promise<string | GetRawTransactionResult> {
-    return this.send("getrawtransaction", [serializeHash(hash), normalizeBooleanLike(verbose)]);
+  public getRawTransaction(hash: H256 | string, verbose: BooleanLikeParam = 0): Promise<string | GetRawTransactionResult> {
+    return this.send("getrawtransaction", [serializeHash(hash), serializeBooleanLike(verbose)]);
   }
 
   public getStateHeight(): Promise<GetStateHeightResult> {
