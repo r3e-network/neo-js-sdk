@@ -653,6 +653,10 @@ export class RpcClient {
     return this.send<GetUnclaimedGasResult>("getunclaimedgas", [address]).then((response) => response.unclaimed);
   }
 
+  public get_unclaimed_gas(address: string): Promise<GetUnclaimedGasResult> {
+    return this.send("getunclaimedgas", [address]);
+  }
+
   public getUnspents(address: string): Promise<GetUnspentsResult> {
     return this.send("getunspents", [address]);
   }
@@ -669,32 +673,64 @@ export class RpcClient {
     return this.send("openwallet", [path, password]);
   }
 
+  public open_wallet(path: string, password: string): Promise<OpenWalletResult> {
+    return this.openWallet(path, password);
+  }
+
   public closeWallet(): Promise<CloseWalletResult> {
     return this.send("closewallet");
+  }
+
+  public close_wallet(): Promise<CloseWalletResult> {
+    return this.closeWallet();
   }
 
   public dumpPrivKey(address: string): Promise<DumpPrivKeyResult> {
     return this.send("dumpprivkey", [address]);
   }
 
+  public dump_priv_key(address: string): Promise<DumpPrivKeyResult> {
+    return this.dumpPrivKey(address);
+  }
+
   public getNewAddress(): Promise<GetNewAddressResult> {
     return this.send("getnewaddress");
+  }
+
+  public get_new_address(): Promise<GetNewAddressResult> {
+    return this.getNewAddress();
   }
 
   public getWalletBalance(assetId: H160 | string): Promise<WalletBalanceResult> {
     return this.send("getwalletbalance", [serializeHash(assetId)]);
   }
 
+  public get_wallet_balance(assetId: H160 | string): Promise<WalletBalanceResult> {
+    return this.getWalletBalance(assetId);
+  }
+
   public getWalletUnclaimedGas(): Promise<GetWalletUnclaimedGasResult> {
     return this.send("getwalletunclaimedgas");
+  }
+
+  public get_wallet_unclaimed_gas(): Promise<GetWalletUnclaimedGasResult> {
+    return this.getWalletUnclaimedGas();
   }
 
   public importPrivKey(wif: string): Promise<ImportPrivKeyResult> {
     return this.send("importprivkey", [wif]);
   }
 
+  public import_priv_key(wif: string): Promise<ImportPrivKeyResult> {
+    return this.importPrivKey(wif);
+  }
+
   public listAddress(): Promise<ListAddressResult> {
     return this.send("listaddress");
+  }
+
+  public list_address(): Promise<ListAddressResult> {
+    return this.listAddress();
   }
 
   public invokeFunction(
@@ -807,6 +843,16 @@ export class RpcClient {
     return this.send("sendfrom", params);
   }
 
+  public send_from(
+    assetId: H160 | string,
+    from: string,
+    to: string,
+    amount: bigint | number | string,
+    signers: Array<H160 | string> = []
+  ): Promise<RelayTransactionResult> {
+    return this.sendFrom(assetId, from, to, amount, signers);
+  }
+
   public sendMany(
     transfers: Array<{ asset: H160 | string; value: bigint | number | string; address: string }>,
     from?: string,
@@ -830,6 +876,14 @@ export class RpcClient {
     return this.send("sendmany", params);
   }
 
+  public send_many(
+    transfers: Array<{ asset: H160 | string; value: bigint | number | string; address: string }>,
+    from?: string,
+    signers: Array<H160 | string> = []
+  ): Promise<RelayTransactionResult> {
+    return this.sendMany(transfers, from, signers);
+  }
+
   public sendToAddress(
     assetId: H160 | string,
     to: string,
@@ -840,6 +894,14 @@ export class RpcClient {
       to,
       serializeTransferValue(amount)
     ]);
+  }
+
+  public send_to_address(
+    assetId: H160 | string,
+    to: string,
+    amount: bigint | number | string
+  ): Promise<RelayTransactionResult> {
+    return this.sendToAddress(assetId, to, amount);
   }
 
   public submitBlock(block: Uint8Array | string | Base64Encodable): Promise<string> {
