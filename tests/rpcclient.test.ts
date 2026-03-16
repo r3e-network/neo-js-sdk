@@ -261,6 +261,30 @@ describe("rpcclient", () => {
     ]);
   });
 
+  it("accepts neon-style boolean-like params and explicit raw mempool default", async () => {
+    const requests: Array<{ method: string; params: unknown[] }> = [];
+    const client = new RpcClient("http://localhost:10332", {
+      transport: async (_url, request) => {
+        requests.push({ method: request.method, params: request.params });
+        return { jsonrpc: "2.0", id: request.id, result: [] };
+      }
+    });
+
+    await client.getBlock("0xabc", 1 as never);
+    await client.getBlockHeader("0xabc", 0 as never);
+    await client.getRawTransaction("0xabc", 1 as never);
+    await client.getRawMemPool();
+    await client.getRawMemPool(1 as never);
+
+    expect(requests).toEqual([
+      { method: "getblock", params: ["0xabc", true] },
+      { method: "getblockheader", params: ["0xabc", false] },
+      { method: "getrawtransaction", params: ["0xabc", true] },
+      { method: "getrawmempool", params: [false] },
+      { method: "getrawmempool", params: [true] }
+    ]);
+  });
+
   it("accepts plain signer json objects like neon-js", async () => {
     const requests: Array<{ method: string; params: unknown[] }> = [];
     const privateKey = new PrivateKey(

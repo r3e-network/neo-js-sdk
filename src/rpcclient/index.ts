@@ -4,6 +4,7 @@ import { PublicKey } from "../core/keypair.js";
 import { Signer, type SignerJson, Tx } from "../core/tx.js";
 import type {
   Base64Encodable,
+  BooleanLikeParam,
   CancelTransactionResult,
   CloseWalletResult,
   ContractParamLikeJson,
@@ -189,6 +190,10 @@ function serializeTransferAsset(value: H160 | string): string {
 
 function serializeTransferValue(value: bigint | number | string): string {
   return typeof value === "string" ? value : BigInt(value).toString();
+}
+
+function normalizeBooleanLike(value: BooleanLikeParam): boolean {
+  return value === true || value === 1;
 }
 
 export function mainnetEndpoints(): string[] {
@@ -403,16 +408,16 @@ export class RpcClient {
     return this.getBestBlockHash();
   }
 
-  public getBlock(indexOrHash: number | string, verbose: true): Promise<GetBlockVerboseResult>;
-  public getBlock(indexOrHash: number | string, verbose?: false): Promise<string>;
-  public getBlock(indexOrHash: number | string, verbose = false): Promise<string | GetBlockVerboseResult> {
-    return this.send("getblock", [indexOrHash, verbose]);
+  public getBlock(indexOrHash: number | string, verbose: true | 1): Promise<GetBlockVerboseResult>;
+  public getBlock(indexOrHash: number | string, verbose?: false | 0): Promise<string>;
+  public getBlock(indexOrHash: number | string, verbose: BooleanLikeParam = false): Promise<string | GetBlockVerboseResult> {
+    return this.send("getblock", [indexOrHash, normalizeBooleanLike(verbose)]);
   }
 
-  public get_block(indexOrHash: number | string, verbose: true): Promise<GetBlockVerboseResult>;
-  public get_block(indexOrHash: number | string, verbose?: false): Promise<string>;
-  public get_block(indexOrHash: number | string, verbose = true): Promise<string | GetBlockVerboseResult> {
-    return verbose ? this.getBlock(indexOrHash, true) : this.getBlock(indexOrHash, false);
+  public get_block(indexOrHash: number | string, verbose: true | 1): Promise<GetBlockVerboseResult>;
+  public get_block(indexOrHash: number | string, verbose?: false | 0): Promise<string>;
+  public get_block(indexOrHash: number | string, verbose: BooleanLikeParam = true): Promise<string | GetBlockVerboseResult> {
+    return normalizeBooleanLike(verbose) ? this.getBlock(indexOrHash, true) : this.getBlock(indexOrHash, false);
   }
 
   public getBlockCount(): Promise<number> {
@@ -439,22 +444,22 @@ export class RpcClient {
     return this.getBlockHash(blockIndex);
   }
 
-  public getBlockHeader(indexOrHash: number | string, verbose: true): Promise<GetBlockHeaderVerboseResult>;
-  public getBlockHeader(indexOrHash: number | string, verbose?: false): Promise<string>;
-  public getBlockHeader(indexOrHash: number | string, verbose = false): Promise<string | GetBlockHeaderVerboseResult> {
-    return this.send("getblockheader", [indexOrHash, verbose]);
+  public getBlockHeader(indexOrHash: number | string, verbose: true | 1): Promise<GetBlockHeaderVerboseResult>;
+  public getBlockHeader(indexOrHash: number | string, verbose?: false | 0): Promise<string>;
+  public getBlockHeader(indexOrHash: number | string, verbose: BooleanLikeParam = false): Promise<string | GetBlockHeaderVerboseResult> {
+    return this.send("getblockheader", [indexOrHash, normalizeBooleanLike(verbose)]);
   }
 
-  public get_block_header(indexOrHash: number | string, verbose: true): Promise<GetBlockHeaderVerboseResult>;
-  public get_block_header(indexOrHash: number | string, verbose?: false): Promise<string>;
+  public get_block_header(indexOrHash: number | string, verbose: true | 1): Promise<GetBlockHeaderVerboseResult>;
+  public get_block_header(indexOrHash: number | string, verbose?: false | 0): Promise<string>;
   public get_block_header(options: {
     block_hash?: H256 | string | null;
     height?: number | null;
-    verbose?: boolean;
+    verbose?: BooleanLikeParam;
   }): Promise<string | GetBlockHeaderVerboseResult>;
   public get_block_header(
-    indexOrHashOrOptions: number | string | { block_hash?: H256 | string | null; height?: number | null; verbose?: boolean },
-    verbose = true
+    indexOrHashOrOptions: number | string | { block_hash?: H256 | string | null; height?: number | null; verbose?: BooleanLikeParam },
+    verbose: BooleanLikeParam = true
   ): Promise<string | GetBlockHeaderVerboseResult> {
     if (typeof indexOrHashOrOptions === "object" && indexOrHashOrOptions !== null) {
       const blockHash =
@@ -462,7 +467,7 @@ export class RpcClient {
           ? indexOrHashOrOptions.block_hash.toString()
           : indexOrHashOrOptions.block_hash ?? null;
       const height = indexOrHashOrOptions.height ?? null;
-      const resolvedVerbose = indexOrHashOrOptions.verbose ?? true;
+      const resolvedVerbose = normalizeBooleanLike(indexOrHashOrOptions.verbose ?? true);
 
       if (blockHash === null && height === null) {
         return Promise.reject(new JsonRpcError(RpcCode.InvalidParams, "block_hash and height cannot be both None"));
@@ -573,16 +578,16 @@ export class RpcClient {
     return this.getPeers();
   }
 
-  public getRawMemPool(includeUnverified?: boolean): Promise<GetRawMemPoolResult> {
-    return includeUnverified === undefined
-      ? this.send("getrawmempool")
-      : this.send("getrawmempool", [includeUnverified]);
+  public getRawMemPool(includeUnverified: true | 1): Promise<GetRawMemPoolResult>;
+  public getRawMemPool(includeUnverified?: false | 0): Promise<GetRawMemPoolResult>;
+  public getRawMemPool(includeUnverified: BooleanLikeParam = false): Promise<GetRawMemPoolResult> {
+    return this.send("getrawmempool", [normalizeBooleanLike(includeUnverified)]);
   }
 
-  public getRawTransaction(hash: H256 | string, verbose: true): Promise<GetRawTransactionResult>;
-  public getRawTransaction(hash: H256 | string, verbose?: false): Promise<string>;
-  public getRawTransaction(hash: H256 | string, verbose = false): Promise<string | GetRawTransactionResult> {
-    return this.send("getrawtransaction", [serializeHash(hash), verbose]);
+  public getRawTransaction(hash: H256 | string, verbose: true | 1): Promise<GetRawTransactionResult>;
+  public getRawTransaction(hash: H256 | string, verbose?: false | 0): Promise<string>;
+  public getRawTransaction(hash: H256 | string, verbose: BooleanLikeParam = false): Promise<string | GetRawTransactionResult> {
+    return this.send("getrawtransaction", [serializeHash(hash), normalizeBooleanLike(verbose)]);
   }
 
   public getStateHeight(): Promise<GetStateHeightResult> {

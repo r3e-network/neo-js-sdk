@@ -50,6 +50,8 @@ export interface JsonRpcLike {
   send<T = unknown>(method: string, params?: unknown[]): Promise<T>;
 }
 
+export type BooleanLikeParam = 0 | 1 | boolean;
+
 export interface InvokeParameterJson {
   type: string;
   value?: unknown;
