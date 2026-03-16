@@ -90,4 +90,39 @@ describe("python compatibility", () => {
     await expect(client.get_best_block_hash()).resolves.toBe("getbestblockhash");
     await expect(client.get_version()).resolves.toBe("getversion");
   });
+
+  it("matches the Python get_block_header validation contract on the snake_case alias", async () => {
+    const requests: Array<{ method: string; params: unknown[] }> = [];
+    const client = new RpcClient("http://localhost:10332", {
+      transport: async (_url, request) => {
+        requests.push({ method: request.method, params: request.params });
+        return {
+          jsonrpc: "2.0",
+          id: request.id,
+          result: request.method
+        };
+      }
+    });
+
+    await expect(
+      client.get_block_header({ block_hash: "0xabc", verbose: false })
+    ).resolves.toBe("getblockheader");
+    await expect(
+      client.get_block_header({ height: 12, verbose: true })
+    ).resolves.toBe("getblockheader");
+
+    expect(requests).toEqual([
+      { method: "getblockheader", params: ["0xabc", false] },
+      { method: "getblockheader", params: [12, true] }
+    ]);
+
+    await expect(client.get_block_header({})).rejects.toMatchObject({
+      code: -32602
+    });
+    await expect(
+      client.get_block_header({ block_hash: "0xabc", height: 12 })
+    ).rejects.toMatchObject({
+      code: -32602
+    });
+  });
 });

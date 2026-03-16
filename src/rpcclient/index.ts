@@ -428,8 +428,36 @@ export class RpcClient {
 
   public get_block_header(indexOrHash: number | string, verbose: true): Promise<GetBlockHeaderVerboseResult>;
   public get_block_header(indexOrHash: number | string, verbose?: false): Promise<string>;
-  public get_block_header(indexOrHash: number | string, verbose = true): Promise<string | GetBlockHeaderVerboseResult> {
-    return verbose ? this.getBlockHeader(indexOrHash, true) : this.getBlockHeader(indexOrHash, false);
+  public get_block_header(options: {
+    block_hash?: H256 | string | null;
+    height?: number | null;
+    verbose?: boolean;
+  }): Promise<string | GetBlockHeaderVerboseResult>;
+  public get_block_header(
+    indexOrHashOrOptions: number | string | { block_hash?: H256 | string | null; height?: number | null; verbose?: boolean },
+    verbose = true
+  ): Promise<string | GetBlockHeaderVerboseResult> {
+    if (typeof indexOrHashOrOptions === "object" && indexOrHashOrOptions !== null) {
+      const blockHash =
+        indexOrHashOrOptions.block_hash instanceof H256
+          ? indexOrHashOrOptions.block_hash.toString()
+          : indexOrHashOrOptions.block_hash ?? null;
+      const height = indexOrHashOrOptions.height ?? null;
+      const resolvedVerbose = indexOrHashOrOptions.verbose ?? true;
+
+      if (blockHash === null && height === null) {
+        return Promise.reject(new JsonRpcError(RpcCode.InvalidParams, "block_hash and height cannot be both None"));
+      }
+      if (blockHash !== null && height !== null) {
+        return Promise.reject(new JsonRpcError(RpcCode.InvalidParams, "block_hash and height cannot be both set"));
+      }
+
+      return resolvedVerbose
+        ? this.getBlockHeader(blockHash ?? height!, true)
+        : this.getBlockHeader(blockHash ?? height!, false);
+    }
+
+    return verbose ? this.getBlockHeader(indexOrHashOrOptions, true) : this.getBlockHeader(indexOrHashOrOptions, false);
   }
 
   public getApplicationLog(hash: H256 | string, trigger?: string): Promise<GetApplicationLogResult> {

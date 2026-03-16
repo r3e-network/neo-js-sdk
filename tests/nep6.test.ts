@@ -1,8 +1,9 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
-import { Wallet } from "../src/index.js";
+import { Account, Wallet } from "../src/index.js";
 
 const cleanupPaths: string[] = [];
 
@@ -45,5 +46,58 @@ describe("NEP-6 wallet", () => {
     await reopened.decrypt("test");
     expect(reopened.accounts[0].signable()).toBe(true);
     expect(reopened.accounts[0].getScriptHash().equals(account.getScriptHash())).toBe(true);
+  });
+
+  it("matches the Python SDK's synchronous wallet API shape", async () => {
+    const wallet = new Wallet({ name: "sync", passphrase: "secret" });
+    const account = wallet.create_account();
+
+    expect(account).toBeInstanceOf(Account);
+    expect(wallet.accounts).toHaveLength(1);
+
+    const dir = await mkdtemp(join(tmpdir(), "neo-js-sdk-sync-"));
+    cleanupPaths.push(dir);
+    const path = join(dir, "wallet.json");
+
+    wallet.write_to_file(path);
+    const reopened = Wallet.open_nep6_wallet(path);
+    reopened.decrypt("secret");
+
+    expect(reopened.accounts[0].signable()).toBe(true);
+  });
+
+  it("keeps NEP-6 JSON serialization/deserialization strict like the Python SDK", async () => {
+    const watchOnly = new Account({
+      address: "NbTiM6h8r99kpRtb428XcsUk1TzKed2gTc",
+      key: "6PYUUUFei9PBBfVkSn8q7hFCnewWFRBKPxcn6Kz6Bmk3FqWyLyuTQE2XFH",
+      contract: null
+    });
+
+    expect(() => watchOnly.to_json()).toThrow();
+
+    const dir = await mkdtemp(join(tmpdir(), "neo-js-sdk-null-contract-"));
+    cleanupPaths.push(dir);
+    const path = join(dir, "wallet.json");
+    writeFileSync(
+      path,
+      JSON.stringify({
+        name: "watch-only",
+        version: "1.0",
+        scrypt: { n: 16384, r: 8, p: 8 },
+        accounts: [
+          {
+            address: "NbTiM6h8r99kpRtb428XcsUk1TzKed2gTc",
+            key: "6PYUUUFei9PBBfVkSn8q7hFCnewWFRBKPxcn6Kz6Bmk3FqWyLyuTQE2XFH",
+            label: "",
+            isDefault: true,
+            lock: false,
+            contract: null
+          }
+        ]
+      }),
+      "utf8"
+    );
+
+    expect(() => Wallet.open_nep6_wallet(path)).toThrow();
   });
 });

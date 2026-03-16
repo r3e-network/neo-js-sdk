@@ -12,4 +12,13 @@ describe("NEP-2", () => {
     const encrypted = await encryptSecp256r1Key(key, "city of zion");
     expect(encrypted).toBe(source);
   });
+
+  it("exposes synchronous python-style NEP-2 helpers", () => {
+    const source = "6PYUUUFei9PBBfVkSn8q7hFCnewWFRBKPxcn6Kz6Bmk3FqWyLyuTQE2XFH";
+    const key = decryptSecp256r1Key(source, "city of zion");
+
+    expect(key).toBeInstanceOf(PrivateKey);
+    expect(bytesToHex(key.toBytes())).toBe("7d128a6d096f0c14c3a25a2b0c41cf79661bfcb4a8cc95aaaea28bde4d732344");
+    expect(encryptSecp256r1Key(key, "city of zion")).toBe(source);
+  });
 });

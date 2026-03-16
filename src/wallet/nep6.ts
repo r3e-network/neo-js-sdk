@@ -1,5 +1,4 @@
-import { access, readFile, writeFile } from "node:fs/promises";
-import { constants as fsConstants } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { wallet as neonWallet } from "@cityofzion/neon-core";
 import { bytesToBase64, base64ToBytes } from "../internal/bytes.js";
 import { H160 } from "../core/hash.js";
@@ -125,12 +124,12 @@ export class Account {
     return this.watchOnly();
   }
 
-  public async decrypt(
+  public decrypt(
     passphrase: string,
     addressVersion = 53,
     scrypt = new ScryptParams()
-  ): Promise<PublicKey> {
-    this.privateKey = await decryptSecp256r1Key(this.key, passphrase, addressVersion, scrypt);
+  ): PublicKey {
+    this.privateKey = decryptSecp256r1Key(this.key, passphrase, addressVersion, scrypt);
     return this.privateKey.publicKey();
   }
 
@@ -175,13 +174,16 @@ export class Account {
     lock: boolean;
     contract: ReturnType<Contract["toJSON"]> | null;
   } {
+    if (this.contract === null) {
+      throw new Error("neo: watch-only account cannot be serialized to NEP-6 by this compatibility layer");
+    }
     return {
       address: this.address,
       key: this.key,
       label: this.label,
       isDefault: this.isDefault,
       lock: this.locked,
-      contract: this.contract?.toJSON() ?? null
+      contract: this.contract.toJSON()
     };
   }
 
@@ -214,7 +216,11 @@ export class Account {
       label: data.label,
       isDefault: data.isDefault,
       locked: data.lock,
-      contract: data.contract ? Contract.fromJSON(data.contract) : null
+      contract: Contract.fromJSON(
+        data.contract ?? (() => {
+          throw new Error("neo: contract is required in NEP-6 JSON");
+        })()
+      )
     });
   }
 
@@ -263,7 +269,7 @@ export class Wallet {
     this.passphrase = passphrase;
   }
 
-  public async createAccount(): Promise<Account> {
+  public createAccount(): Account {
     if (!this.passphrase) {
       throw new Error("passphrase is not set");
     }
@@ -272,7 +278,7 @@ export class Wallet {
     const publicKey = privateKey.publicKey();
     const address = publicKey.getAddress();
     const contract = new Contract(publicKey.getSignatureRedeemScript(), [new Parameter("signature", "Signature")]);
-    const key = await encryptSecp256r1Key(privateKey, this.passphrase, 53, this.scrypt);
+    const key = encryptSecp256r1Key(privateKey, this.passphrase, 53, this.scrypt);
 
     const account = new Account({
       address,
@@ -284,29 +290,29 @@ export class Wallet {
     return account;
   }
 
-  public async create_account(): Promise<Account> {
+  public create_account(): Account {
     return this.createAccount();
   }
 
-  public async decrypt(passphrase: string): Promise<void> {
+  public decrypt(passphrase: string): void {
     this.passphrase = passphrase;
-    await Promise.all(this.accounts.map((account) => account.decrypt(passphrase, 53, this.scrypt)));
-  }
-
-  public async writeToFile(path: string): Promise<void> {
-    try {
-      await access(path, fsConstants.F_OK);
-      throw new Error(`wallet file ${path} already exists`);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw error;
-      }
+    for (const account of this.accounts) {
+      account.decrypt(passphrase, 53, this.scrypt);
     }
-
-    await writeFile(path, JSON.stringify(this.toJSON()), "utf8");
   }
 
-  public async write_to_file(path: string): Promise<void> {
+  public writeToFile(path: string): void {
+    try {
+      if (existsSync(path)) {
+        throw new Error(`wallet file ${path} already exists`);
+      }
+    } catch (error) {
+      throw error;
+    }
+    writeFileSync(path, JSON.stringify(this.toJSON()), "utf8");
+  }
+
+  public write_to_file(path: string): void {
     return this.writeToFile(path);
   }
 
@@ -378,12 +384,12 @@ export class Wallet {
     return Wallet.fromJSON(data);
   }
 
-  public static async openNep6Wallet(path: string): Promise<Wallet> {
-    const raw = await readFile(path, "utf8");
+  public static openNep6Wallet(path: string): Wallet {
+    const raw = readFileSync(path, "utf8");
     return Wallet.fromJSON(JSON.parse(raw) as ReturnType<Wallet["toJSON"]>);
   }
 
-  public static async open_nep6_wallet(path: string): Promise<Wallet> {
+  public static open_nep6_wallet(path: string): Wallet {
     return Wallet.openNep6Wallet(path);
   }
 }
