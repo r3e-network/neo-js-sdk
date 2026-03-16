@@ -1,0 +1,46 @@
+{
+  "name": "neo-js-sdk",
+  "version": "0.1.0",
+  "description": "Neo N3 JavaScript SDK inspired by r3e-network/neo-python-sdk with expanded RPC coverage.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/r3e-network/neo-js-sdk.git"
+  },
+  "homepage": "https://github.com/r3e-network/neo-js-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/r3e-network/neo-js-sdk/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "neo",
+    "neo-n3",
+    "sdk",
+    "javascript",
+    "typescript"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@cityofzion/neon-core": "^5.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

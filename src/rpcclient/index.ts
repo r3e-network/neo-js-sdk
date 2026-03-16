@@ -1,0 +1,782 @@
+import { bytesToBase64, hexToBytes, toUint8Array } from "../internal/bytes.js";
+import { H160, H256 } from "../core/hash.js";
+import { PublicKey } from "../core/keypair.js";
+import { Signer, Tx } from "../core/tx.js";
+import type {
+  InvokeParameterJson,
+  JsonRpcLike,
+  JsonRpcOptions,
+  JsonRpcRequest,
+  JsonRpcResponse,
+  JsonRpcTransport,
+  RpcClientOptions
+} from "./types.js";
+
+const DEFAULT_TIMEOUT_MS = 10_000;
+
+export enum RpcCode {
+  InvalidRequest = -32600,
+  MethodNotFound = -32601,
+  InvalidParams = -32602,
+  InternalError = -32603,
+  BadRequest = -32700,
+  UnknownBlock = -101,
+  UnknownContract = -102,
+  UnknownTransaction = -103,
+  UnknownStorageItem = -104,
+  UnknownScriptContainer = -105,
+  UnknownStateRoot = -106,
+  UnknownSession = -107,
+  UnknownIterator = -108,
+  UnknownHeight = -109,
+  InsufficientFundsWallet = -300,
+  WalletFeeLimit = -301,
+  NoOpenedWallet = -302,
+  WalletNotFound = -303,
+  WalletNotSupported = -304,
+  UnknownAccount = -305,
+  VerificationFailed = -500,
+  AlreadyExists = -501,
+  MempoolCapacityReached = -502,
+  AlreadyInPool = -503,
+  InsufficientNetworkFee = -504,
+  PolicyFailed = -505,
+  InvalidScript = -506,
+  InvalidAttribute = -507,
+  InvalidSignature = -508,
+  InvalidSize = -509,
+  ExpiredTransaction = -510,
+  InsufficientFunds = -511,
+  InvalidContractVerification = -512,
+  AccessDenied = -600,
+  SessionsDisabled = -601,
+  OracleDisabled = -602,
+  OracleRequestFinished = -603,
+  OracleRequestNotFound = -604,
+  OracleNotDesignatedNode = -605,
+  UnsupportedState = -606,
+  InvalidProof = -607,
+  ExecutionFailed = -608
+}
+
+export class JsonRpcError extends Error {
+  public constructor(
+    public readonly code: number,
+    message: string
+  ) {
+    super(message);
+    this.name = "JsonRpcError";
+  }
+
+  public override toString(): string {
+    return `JsonRpcError{code:${this.code},message:${this.message}}`;
+  }
+}
+
+async function defaultTransport(
+  url: string,
+  request: JsonRpcRequest,
+  timeoutMs: number
+): Promise<JsonRpcResponse> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(request),
+      signal: controller.signal
+    });
+
+    return (await response.json()) as JsonRpcResponse;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function normalizeEndpoints(endpoints: string | string[]): string[] {
+  return Array.isArray(endpoints) ? endpoints : [endpoints];
+}
+
+function serializeHash(value: H160 | H256 | string): string {
+  return typeof value === "string" ? value : value.toString();
+}
+
+function encodeBinary(value: Tx | Uint8Array | string): string {
+  if (value instanceof Tx) {
+    return bytesToBase64(value.toBytes());
+  }
+  if (value instanceof Uint8Array) {
+    return bytesToBase64(value);
+  }
+  return value;
+}
+
+function encodeStorageKey(value: Uint8Array | string): string {
+  if (value instanceof Uint8Array) {
+    return bytesToBase64(value);
+  }
+  return bytesToBase64(hexToBytes(value));
+}
+
+function serializeSigners(signers: Array<Signer | { toJSON(): unknown }> = []): unknown[] {
+  return signers.map((signer) => signer.toJSON());
+}
+
+function serializeTransferAsset(value: H160 | string): string {
+  return serializeHash(value);
+}
+
+function serializeTransferValue(value: bigint | number | string): string {
+  return typeof value === "string" ? value : BigInt(value).toString();
+}
+
+export function mainnetEndpoints(): string[] {
+  return [
+    "http://seed1.neo.org:10332",
+    "http://seed2.neo.org:10332",
+    "http://seed3.neo.org:10332",
+    "http://seed4.neo.org:10332",
+    "http://seed5.neo.org:10332"
+  ];
+}
+
+export function mainnet_endpoints(): string[] {
+  return mainnetEndpoints();
+}
+
+export function testnetEndpoints(): string[] {
+  return [
+    "http://seed1t5.neo.org:20332",
+    "http://seed2t5.neo.org:20332",
+    "http://seed3t5.neo.org:20332",
+    "http://seed4t5.neo.org:20332",
+    "http://seed5t5.neo.org:20332"
+  ];
+}
+
+export function testnet_endpoints(): string[] {
+  return testnetEndpoints();
+}
+
+export class InvokeParameters {
+  private readonly parameters: InvokeParameterJson[] = [];
+
+  public addAny(): this {
+    this.parameters.push({ type: "Any" });
+    return this;
+  }
+
+  public add_any(): this {
+    return this.addAny();
+  }
+
+  public addBool(value: boolean): this {
+    this.parameters.push({ type: "Boolean", value });
+    return this;
+  }
+
+  public add_bool(value: boolean): this {
+    return this.addBool(value);
+  }
+
+  public addInteger(value: bigint | number): this {
+    this.parameters.push({ type: "Integer", value: BigInt(value).toString() });
+    return this;
+  }
+
+  public add_integer(value: bigint | number): this {
+    return this.addInteger(value);
+  }
+
+  public addHash160(value: H160 | string): this {
+    this.parameters.push({ type: "Hash160", value: serializeHash(value) });
+    return this;
+  }
+
+  public add_hash160(value: H160 | string): this {
+    return this.addHash160(value);
+  }
+
+  public addHash256(value: H256 | string): this {
+    this.parameters.push({ type: "Hash256", value: serializeHash(value) });
+    return this;
+  }
+
+  public add_hash256(value: H256 | string): this {
+    return this.addHash256(value);
+  }
+
+  public addPublicKey(value: PublicKey): this {
+    this.parameters.push({ type: "PublicKey", value: value.toString() });
+    return this;
+  }
+
+  public add_public_key(value: PublicKey): this {
+    return this.addPublicKey(value);
+  }
+
+  public addString(value: string): this {
+    this.parameters.push({ type: "String", value });
+    return this;
+  }
+
+  public add_string(value: string): this {
+    return this.addString(value);
+  }
+
+  public addSignature(value: Uint8Array | string): this {
+    const encoded = typeof value === "string" ? value : bytesToBase64(value);
+    this.parameters.push({ type: "Signature", value: encoded });
+    return this;
+  }
+
+  public add_signature(value: Uint8Array | string): this {
+    return this.addSignature(value);
+  }
+
+  public addByteArray(value: Uint8Array | string): this {
+    const encoded = typeof value === "string" ? value : bytesToBase64(value);
+    this.parameters.push({ type: "ByteArray", value: encoded });
+    return this;
+  }
+
+  public add_byte_array(value: Uint8Array | string): this {
+    return this.addByteArray(value);
+  }
+
+  public toJSON(): InvokeParameterJson[] {
+    return [...this.parameters];
+  }
+
+  public to_json(): InvokeParameterJson[] {
+    return this.toJSON();
+  }
+}
+
+export class JsonRpc implements JsonRpcLike {
+  private readonly endpoints: string[];
+  private readonly timeoutMs: number;
+  private readonly transport: JsonRpcTransport;
+  private nextId = 1;
+  private nextEndpointIndex = 0;
+
+  public constructor(endpoints: string | string[], options: JsonRpcOptions = {}) {
+    this.endpoints = normalizeEndpoints(endpoints);
+    this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.transport = options.transport ?? defaultTransport;
+  }
+
+  public async send<T = unknown>(method: string, params: unknown[] = []): Promise<T> {
+    if (this.endpoints.length === 0) {
+      throw new JsonRpcError(RpcCode.BadRequest, "no RPC endpoints configured");
+    }
+
+    const request: JsonRpcRequest = {
+      jsonrpc: "2.0",
+      id: this.nextId,
+      method,
+      params
+    };
+    this.nextId += 1;
+
+    const startIndex = this.nextEndpointIndex;
+    this.nextEndpointIndex = (this.nextEndpointIndex + 1) % this.endpoints.length;
+
+    let lastTransportError: JsonRpcError | null = null;
+    for (let offset = 0; offset < this.endpoints.length; offset += 1) {
+      const endpointIndex = (startIndex + offset) % this.endpoints.length;
+      const endpoint = this.endpoints[endpointIndex];
+
+      try {
+        const response = await this.transport(endpoint, request, this.timeoutMs);
+        if ("error" in response && response.error) {
+          throw new JsonRpcError(response.error.code, response.error.message);
+        }
+        if (!("result" in response)) {
+          throw new JsonRpcError(RpcCode.InvalidRequest, "response missing result");
+        }
+        return response.result as T;
+      } catch (error) {
+        if (error instanceof JsonRpcError) {
+          if (error.code !== RpcCode.InternalError) {
+            throw error;
+          }
+          lastTransportError = error;
+          continue;
+        }
+
+        lastTransportError = new JsonRpcError(
+          RpcCode.InternalError,
+          error instanceof Error ? error.message : String(error)
+        );
+      }
+    }
+
+    throw lastTransportError ?? new JsonRpcError(RpcCode.InternalError, "RPC request failed");
+  }
+}
+
+export class RpcClient {
+  private readonly jsonrpc: JsonRpcLike;
+
+  public constructor(endpoints: string | string[] = [], options: RpcClientOptions = {}) {
+    this.jsonrpc = options.jsonrpc ?? new JsonRpc(endpoints, options);
+  }
+
+  public async send<T = unknown>(method: string, params: unknown[] = []): Promise<T> {
+    return this.jsonrpc.send<T>(method, params);
+  }
+
+  public getBestBlockHash(): Promise<string> {
+    return this.send("getbestblockhash");
+  }
+
+  public get_best_block_hash(): Promise<string> {
+    return this.getBestBlockHash();
+  }
+
+  public getBlock(indexOrHash: number | string, verbose = true): Promise<unknown> {
+    return this.send("getblock", [indexOrHash, verbose]);
+  }
+
+  public get_block(indexOrHash: number | string, verbose = true): Promise<unknown> {
+    return this.getBlock(indexOrHash, verbose);
+  }
+
+  public getBlockCount(): Promise<number> {
+    return this.send("getblockcount");
+  }
+
+  public get_block_count(): Promise<number> {
+    return this.getBlockCount();
+  }
+
+  public getBlockHeaderCount(): Promise<number> {
+    return this.send("getblockheadercount");
+  }
+
+  public get_block_header_count(): Promise<number> {
+    return this.getBlockHeaderCount();
+  }
+
+  public getBlockHash(blockIndex: number): Promise<string> {
+    return this.send("getblockhash", [blockIndex]);
+  }
+
+  public get_block_hash(blockIndex: number): Promise<string> {
+    return this.getBlockHash(blockIndex);
+  }
+
+  public getBlockHeader(indexOrHash: number | string, verbose = true): Promise<unknown> {
+    return this.send("getblockheader", [indexOrHash, verbose]);
+  }
+
+  public get_block_header(indexOrHash: number | string, verbose = true): Promise<unknown> {
+    return this.getBlockHeader(indexOrHash, verbose);
+  }
+
+  public getApplicationLog(hash: H256 | string, trigger?: string): Promise<unknown> {
+    const params: unknown[] = [serializeHash(hash)];
+    if (trigger !== undefined) {
+      params.push(trigger);
+    }
+    return this.send("getapplicationlog", params);
+  }
+
+  public get_application_log(hash: H256 | string, trigger?: string): Promise<unknown> {
+    return this.getApplicationLog(hash, trigger);
+  }
+
+  public getCandidates(): Promise<unknown> {
+    return this.send("getcandidates");
+  }
+
+  public getCommittee(): Promise<unknown> {
+    return this.send("getcommittee");
+  }
+
+  public get_committee(): Promise<unknown> {
+    return this.getCommittee();
+  }
+
+  public getConnectionCount(): Promise<number> {
+    return this.send("getconnectioncount");
+  }
+
+  public get_connection_count(): Promise<number> {
+    return this.getConnectionCount();
+  }
+
+  public getContractState(scriptHash: H160 | string): Promise<unknown> {
+    return this.send("getcontractstate", [serializeHash(scriptHash)]);
+  }
+
+  public get_contract_state(scriptHash: H160 | string): Promise<unknown> {
+    return this.getContractState(scriptHash);
+  }
+
+  public getNativeContracts(): Promise<unknown> {
+    return this.send("getnativecontracts");
+  }
+
+  public get_native_contracts(): Promise<unknown> {
+    return this.getNativeContracts();
+  }
+
+  public getNep11Balances(account: string): Promise<unknown> {
+    return this.send("getnep11balances", [account]);
+  }
+
+  public getNep11Properties(contractHash: H160 | string, tokenId: string): Promise<unknown> {
+    return this.send("getnep11properties", [serializeHash(contractHash), tokenId]);
+  }
+
+  public getNep11Transfers(account: string, startTime?: string, endTime?: string): Promise<unknown> {
+    const params: unknown[] = [account];
+    if (startTime !== undefined) {
+      params.push(startTime);
+    }
+    if (endTime !== undefined) {
+      params.push(endTime);
+    }
+    return this.send("getnep11transfers", params);
+  }
+
+  public getNep17Balances(account: string): Promise<unknown> {
+    return this.send("getnep17balances", [account]);
+  }
+
+  public getNep17Transfers(account: string, startTime?: string, endTime?: string): Promise<unknown> {
+    const params: unknown[] = [account];
+    if (startTime !== undefined) {
+      params.push(startTime);
+    }
+    if (endTime !== undefined) {
+      params.push(endTime);
+    }
+    return this.send("getnep17transfers", params);
+  }
+
+  public getNextBlockValidators(): Promise<unknown> {
+    return this.send("getnextblockvalidators");
+  }
+
+  public getPeers(): Promise<unknown> {
+    return this.send("getpeers");
+  }
+
+  public get_peers(): Promise<unknown> {
+    return this.getPeers();
+  }
+
+  public getRawMemPool(includeUnverified?: boolean): Promise<unknown> {
+    return includeUnverified === undefined
+      ? this.send("getrawmempool")
+      : this.send("getrawmempool", [includeUnverified]);
+  }
+
+  public getRawTransaction(hash: H256 | string, verbose = true): Promise<unknown> {
+    return this.send("getrawtransaction", [serializeHash(hash), verbose]);
+  }
+
+  public getStateHeight(): Promise<unknown> {
+    return this.send("getstateheight");
+  }
+
+  public getStateRoot(index: number): Promise<unknown> {
+    return this.send("getstateroot", [index]);
+  }
+
+  public getProof(rootHash: H256 | string, contractHash: H160 | string, key: Uint8Array | string): Promise<unknown> {
+    return this.send("getproof", [serializeHash(rootHash), serializeHash(contractHash), encodeStorageKey(key)]);
+  }
+
+  public verifyProof(rootHash: H256 | string, proof: Uint8Array | string): Promise<unknown> {
+    return this.send("verifyproof", [serializeHash(rootHash), encodeStorageKey(proof)]);
+  }
+
+  public getState(rootHash: H256 | string, contractHash: H160 | string, key: Uint8Array | string): Promise<unknown> {
+    return this.send("getstate", [serializeHash(rootHash), serializeHash(contractHash), encodeStorageKey(key)]);
+  }
+
+  public getStorage(scriptHash: H160 | string, key: Uint8Array | string): Promise<unknown> {
+    return this.send("getstorage", [serializeHash(scriptHash), encodeStorageKey(key)]);
+  }
+
+  public findStorage(scriptHash: H160 | string, prefix: Uint8Array | string, start = 0): Promise<unknown> {
+    return this.send("findstorage", [serializeHash(scriptHash), encodeStorageKey(prefix), start]);
+  }
+
+  public findStates(
+    rootHash: H256 | string,
+    contractHash: H160 | string,
+    prefix: Uint8Array | string,
+    from?: Uint8Array | string,
+    count?: number
+  ): Promise<unknown> {
+    const params: unknown[] = [
+      serializeHash(rootHash),
+      serializeHash(contractHash),
+      encodeStorageKey(prefix)
+    ];
+
+    if (from !== undefined || count !== undefined) {
+      params.push(from === undefined ? "" : encodeStorageKey(from));
+    }
+    if (count !== undefined) {
+      params.push(count);
+    }
+
+    return this.send("findstates", params);
+  }
+
+  public getTransactionHeight(hash: H256 | string): Promise<number> {
+    return this.send("gettransactionheight", [serializeHash(hash)]);
+  }
+
+  public getUnclaimedGas(address: string): Promise<unknown> {
+    return this.send("getunclaimedgas", [address]);
+  }
+
+  public getUnspents(address: string): Promise<unknown> {
+    return this.send("getunspents", [address]);
+  }
+
+  public getVersion(): Promise<unknown> {
+    return this.send("getversion");
+  }
+
+  public get_version(): Promise<unknown> {
+    return this.getVersion();
+  }
+
+  public openWallet(path: string, password: string): Promise<unknown> {
+    return this.send("openwallet", [path, password]);
+  }
+
+  public closeWallet(): Promise<unknown> {
+    return this.send("closewallet");
+  }
+
+  public dumpPrivKey(address: string): Promise<unknown> {
+    return this.send("dumpprivkey", [address]);
+  }
+
+  public getNewAddress(): Promise<unknown> {
+    return this.send("getnewaddress");
+  }
+
+  public getWalletBalance(assetId: H160 | string): Promise<unknown> {
+    return this.send("getwalletbalance", [serializeHash(assetId)]);
+  }
+
+  public getWalletUnclaimedGas(): Promise<unknown> {
+    return this.send("getwalletunclaimedgas");
+  }
+
+  public importPrivKey(wif: string): Promise<unknown> {
+    return this.send("importprivkey", [wif]);
+  }
+
+  public listAddress(): Promise<unknown> {
+    return this.send("listaddress");
+  }
+
+  public invokeFunction(
+    contractHash: H160 | string,
+    method: string,
+    args: InvokeParameters | InvokeParameterJson[] = [],
+    signers: Signer[] = []
+  ): Promise<unknown> {
+    const serializedArgs = Array.isArray(args) ? args : args.toJSON();
+    return this.send("invokefunction", [
+      serializeHash(contractHash),
+      method,
+      serializedArgs,
+      serializeSigners(signers)
+    ]);
+  }
+
+  public invoke_function(
+    contractHash: H160 | string,
+    method: string,
+    args: InvokeParameters | InvokeParameterJson[] = [],
+    signers: Signer[] = []
+  ): Promise<unknown> {
+    return this.invokeFunction(contractHash, method, args, signers);
+  }
+
+  public invokeContractVerify(
+    contractHash: H160 | string,
+    args: InvokeParameters | InvokeParameterJson[] = [],
+    signers: Signer[] = []
+  ): Promise<unknown> {
+    const serializedArgs = Array.isArray(args) ? args : args.toJSON();
+    return this.send("invokecontractverify", [
+      serializeHash(contractHash),
+      serializedArgs,
+      serializeSigners(signers)
+    ]);
+  }
+
+  public invoke_contract_verify(
+    contractHash: H160 | string,
+    args: InvokeParameters | InvokeParameterJson[] = [],
+    signers: Signer[] = []
+  ): Promise<unknown> {
+    return this.invokeContractVerify(contractHash, args, signers);
+  }
+
+  public invokeScript(script: Uint8Array | string, signers: Signer[] = []): Promise<unknown> {
+    return this.send("invokescript", [encodeBinary(script), serializeSigners(signers)]);
+  }
+
+  public invoke_script(script: Uint8Array | string, signers: Signer[] = []): Promise<unknown> {
+    return this.invokeScript(script, signers);
+  }
+
+  public traverseIterator(sessionId: string, iteratorId: string, count: number): Promise<unknown> {
+    return this.send("traverseiterator", [sessionId, iteratorId, count]);
+  }
+
+  public traverse_iterator(sessionId: string, iteratorId: string, count: number): Promise<unknown> {
+    return this.traverseIterator(sessionId, iteratorId, count);
+  }
+
+  public terminateSession(sessionId: string): Promise<unknown> {
+    return this.send("terminatesession", [sessionId]);
+  }
+
+  public listPlugins(): Promise<unknown> {
+    return this.send("listplugins");
+  }
+
+  public list_plugins(): Promise<unknown> {
+    return this.listPlugins();
+  }
+
+  public sendRawTransaction(tx: Tx | Uint8Array | string): Promise<unknown> {
+    return this.send("sendrawtransaction", [encodeBinary(tx)]);
+  }
+
+  public send_raw_transaction(tx: Tx | Uint8Array | string): Promise<unknown> {
+    return this.sendRawTransaction(tx);
+  }
+
+  public sendTx(tx: Tx | Uint8Array | string): Promise<unknown> {
+    return this.send("sendrawtransaction", [encodeBinary(tx)]);
+  }
+
+  public send_tx(tx: Tx | Uint8Array | string): Promise<unknown> {
+    return this.sendTx(tx);
+  }
+
+  public sendFrom(
+    assetId: H160 | string,
+    from: string,
+    to: string,
+    amount: bigint | number | string,
+    signers: Array<H160 | string> = []
+  ): Promise<unknown> {
+    const params: unknown[] = [
+      serializeTransferAsset(assetId),
+      from,
+      to,
+      serializeTransferValue(amount)
+    ];
+
+    if (signers.length > 0) {
+      params.push(signers.map((signer) => serializeHash(signer)));
+    }
+
+    return this.send("sendfrom", params);
+  }
+
+  public sendMany(
+    transfers: Array<{ asset: H160 | string; value: bigint | number | string; address: string }>,
+    from?: string,
+    signers: Array<H160 | string> = []
+  ): Promise<unknown> {
+    const serializedTransfers = transfers.map((transfer) => ({
+      asset: serializeTransferAsset(transfer.asset),
+      value: serializeTransferValue(transfer.value),
+      address: transfer.address
+    }));
+
+    const params: unknown[] = [];
+    if (from !== undefined) {
+      params.push(from);
+    }
+    params.push(serializedTransfers);
+    if (signers.length > 0) {
+      params.push(signers.map((signer) => serializeHash(signer)));
+    }
+
+    return this.send("sendmany", params);
+  }
+
+  public sendToAddress(
+    assetId: H160 | string,
+    to: string,
+    amount: bigint | number | string
+  ): Promise<unknown> {
+    return this.send("sendtoaddress", [
+      serializeTransferAsset(assetId),
+      to,
+      serializeTransferValue(amount)
+    ]);
+  }
+
+  public submitBlock(block: Uint8Array | string): Promise<unknown> {
+    return this.send("submitblock", [encodeBinary(block)]);
+  }
+
+  public submit_block(block: Uint8Array | string): Promise<unknown> {
+    return this.submitBlock(block);
+  }
+
+  public validateAddress(address: string): Promise<unknown> {
+    return this.send("validateaddress", [address]);
+  }
+
+  public validate_address(address: string): Promise<unknown> {
+    return this.validateAddress(address);
+  }
+
+  public cancelTx(txHash: H256 | string, signers: Array<H160 | string> = [], extraFee: bigint | number = 0): Promise<unknown> {
+    return this.send("canceltx", [
+      serializeHash(txHash),
+      signers.map((signer) => serializeHash(signer)),
+      BigInt(extraFee).toString()
+    ]);
+  }
+
+  public cancel_tx(txHash: H256 | string, signers: Array<H160 | string> = [], extraFee: bigint | number = 0): Promise<unknown> {
+    return this.cancelTx(txHash, signers, extraFee);
+  }
+
+  public cancelTransaction(
+    txHash: H256 | string,
+    signers: Array<H160 | string> = [],
+    extraFee?: bigint | number | string
+  ): Promise<unknown> {
+    const params: unknown[] = [
+      serializeHash(txHash),
+      signers.map((signer) => serializeHash(signer))
+    ];
+    if (extraFee !== undefined) {
+      params.push(typeof extraFee === "string" ? extraFee : BigInt(extraFee).toString());
+    }
+    return this.send("canceltransaction", params);
+  }
+
+  public calculateNetworkFee(tx: Tx | Uint8Array | string): Promise<unknown> {
+    return this.send("calculatenetworkfee", [encodeBinary(tx)]);
+  }
+}
+
+export type { JsonRpcOptions, JsonRpcRequest, JsonRpcResponse, JsonRpcTransport, RpcClientOptions } from "./types.js";
