@@ -2,6 +2,70 @@ import { H160 } from "./hash.js";
 import { PublicKey } from "./keypair.js";
 import { BinaryReader, BinaryWriter } from "./serializing.js";
 
+export interface BaseWitnessConditionJson {
+  type: string;
+}
+
+export interface BooleanConditionJson {
+  type: "Boolean";
+  expression: boolean;
+}
+
+export interface NotConditionJson {
+  type: "Not";
+  expression: WitnessConditionJson;
+}
+
+export interface AndConditionJson {
+  type: "And";
+  expressions: WitnessConditionJson[];
+}
+
+export interface OrConditionJson {
+  type: "Or";
+  expressions: WitnessConditionJson[];
+}
+
+export interface ScriptHashConditionJson {
+  type: "ScriptHash";
+  hash: string;
+}
+
+export interface GroupConditionJson {
+  type: "Group";
+  group: string;
+}
+
+export interface CalledByEntryConditionJson {
+  type: "CalledByEntry";
+}
+
+export interface CalledByContractConditionJson {
+  type: "CalledByContract";
+  hash: string;
+}
+
+export interface CalledByGroupConditionJson {
+  type: "CalledByGroup";
+  group: string;
+}
+
+export type WitnessConditionJson =
+  | BooleanConditionJson
+  | NotConditionJson
+  | AndConditionJson
+  | OrConditionJson
+  | ScriptHashConditionJson
+  | GroupConditionJson
+  | CalledByEntryConditionJson
+  | CalledByContractConditionJson
+  | CalledByGroupConditionJson;
+
+export interface WitnessRuleJson {
+  action: "Deny" | "Allow";
+  conditions: WitnessConditionJson[];
+}
+
 export enum WitnessRuleAction {
   Deny = 0x00,
   Allow = 0x01
@@ -52,11 +116,11 @@ export abstract class WitnessCondition {
     }
   }
 
-  public toJSON(): { type: string } {
-    return { type: WitnessConditionType[this.type] };
+  public toJSON(): WitnessConditionJson {
+    return { type: WitnessConditionType[this.type] as WitnessConditionJson["type"] } as WitnessConditionJson;
   }
 
-  public to_json(): { type: string } {
+  public to_json(): WitnessConditionJson {
     return this.toJSON();
   }
 }
@@ -71,11 +135,11 @@ export class BooleanCondition extends WitnessCondition {
     writer.writeBool(this.expression);
   }
 
-  public override toJSON(): { type: string; expression: boolean } {
-    return { type: WitnessConditionType[this.type], expression: this.expression };
+  public override toJSON(): BooleanConditionJson {
+    return { type: "Boolean", expression: this.expression };
   }
 
-  public override to_json(): { type: string; expression: boolean } {
+  public override to_json(): BooleanConditionJson {
     return this.toJSON();
   }
 }
@@ -90,11 +154,11 @@ export class NotCondition extends WitnessCondition {
     this.expression.marshalTo(writer);
   }
 
-  public override toJSON(): { type: string; expression: ReturnType<WitnessCondition["toJSON"]> } {
-    return { type: WitnessConditionType[this.type], expression: this.expression.toJSON() };
+  public override toJSON(): NotConditionJson {
+    return { type: "Not", expression: this.expression.toJSON() };
   }
 
-  public override to_json(): { type: string; expression: ReturnType<WitnessCondition["toJSON"]> } {
+  public override to_json(): NotConditionJson {
     return this.toJSON();
   }
 }
@@ -109,11 +173,11 @@ export class AndCondition extends WitnessCondition {
     writer.writeMultiple(this.expressions);
   }
 
-  public override toJSON(): { type: string; expressions: ReturnType<WitnessCondition["toJSON"]>[] } {
-    return { type: WitnessConditionType[this.type], expressions: this.expressions.map((expression) => expression.toJSON()) };
+  public override toJSON(): AndConditionJson {
+    return { type: "And", expressions: this.expressions.map((expression) => expression.toJSON()) };
   }
 
-  public override to_json(): { type: string; expressions: ReturnType<WitnessCondition["toJSON"]>[] } {
+  public override to_json(): AndConditionJson {
     return this.toJSON();
   }
 }
@@ -128,11 +192,11 @@ export class OrCondition extends WitnessCondition {
     writer.writeMultiple(this.expressions);
   }
 
-  public override toJSON(): { type: string; expressions: ReturnType<WitnessCondition["toJSON"]>[] } {
-    return { type: WitnessConditionType[this.type], expressions: this.expressions.map((expression) => expression.toJSON()) };
+  public override toJSON(): OrConditionJson {
+    return { type: "Or", expressions: this.expressions.map((expression) => expression.toJSON()) };
   }
 
-  public override to_json(): { type: string; expressions: ReturnType<WitnessCondition["toJSON"]>[] } {
+  public override to_json(): OrConditionJson {
     return this.toJSON();
   }
 }
@@ -147,11 +211,11 @@ export class ScriptHashCondition extends WitnessCondition {
     this.hash.marshalTo(writer);
   }
 
-  public override toJSON(): { type: string; hash: string } {
-    return { type: WitnessConditionType[this.type], hash: this.hash.toString() };
+  public override toJSON(): ScriptHashConditionJson {
+    return { type: "ScriptHash", hash: this.hash.toString() };
   }
 
-  public override to_json(): { type: string; hash: string } {
+  public override to_json(): ScriptHashConditionJson {
     return this.toJSON();
   }
 }
@@ -166,11 +230,11 @@ export class GroupCondition extends WitnessCondition {
     this.group.marshalTo(writer);
   }
 
-  public override toJSON(): { type: string; group: string } {
-    return { type: WitnessConditionType[this.type], group: this.group.toString() };
+  public override toJSON(): GroupConditionJson {
+    return { type: "Group", group: this.group.toString() };
   }
 
-  public override to_json(): { type: string; group: string } {
+  public override to_json(): GroupConditionJson {
     return this.toJSON();
   }
 }
@@ -178,6 +242,14 @@ export class GroupCondition extends WitnessCondition {
 export class CalledByEntryCondition extends WitnessCondition {
   public constructor() {
     super(WitnessConditionType.CalledByEntry);
+  }
+
+  public override toJSON(): CalledByEntryConditionJson {
+    return { type: "CalledByEntry" };
+  }
+
+  public override to_json(): CalledByEntryConditionJson {
+    return this.toJSON();
   }
 }
 
@@ -191,11 +263,11 @@ export class CalledByContractCondition extends WitnessCondition {
     this.hash.marshalTo(writer);
   }
 
-  public override toJSON(): { type: string; hash: string } {
-    return { type: WitnessConditionType[this.type], hash: this.hash.toString() };
+  public override toJSON(): CalledByContractConditionJson {
+    return { type: "CalledByContract", hash: this.hash.toString() };
   }
 
-  public override to_json(): { type: string; hash: string } {
+  public override to_json(): CalledByContractConditionJson {
     return this.toJSON();
   }
 }
@@ -210,11 +282,11 @@ export class CalledByGroupCondition extends WitnessCondition {
     this.group.marshalTo(writer);
   }
 
-  public override toJSON(): { type: string; group: string } {
-    return { type: WitnessConditionType[this.type], group: this.group.toString() };
+  public override toJSON(): CalledByGroupConditionJson {
+    return { type: "CalledByGroup", group: this.group.toString() };
   }
 
-  public override to_json(): { type: string; group: string } {
+  public override to_json(): CalledByGroupConditionJson {
     return this.toJSON();
   }
 }
@@ -238,14 +310,14 @@ export class WitnessRule {
     return new WitnessRule(action, reader.readMultiple(WitnessCondition));
   }
 
-  public toJSON(): { action: string; conditions: ReturnType<WitnessCondition["toJSON"]>[] } {
+  public toJSON(): WitnessRuleJson {
     return {
-      action: WitnessRuleAction[this.action],
+      action: this.action === WitnessRuleAction.Allow ? "Allow" : "Deny",
       conditions: this.conditions.map((condition) => condition.toJSON())
     };
   }
 
-  public to_json(): { action: string; conditions: ReturnType<WitnessCondition["toJSON"]>[] } {
+  public to_json(): WitnessRuleJson {
     return this.toJSON();
   }
 }

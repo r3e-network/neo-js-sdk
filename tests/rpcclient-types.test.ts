@@ -53,6 +53,7 @@ import type {
   NetworkFeeResult,
   OpenWalletResult,
   RelayTransactionResult,
+  TxAttributeJson,
   SendRawTransactionResult,
   SubmitBlockResult,
   TerminateSessionResult,
@@ -71,6 +72,8 @@ import type {
   RpcStructStackItemJson,
   ValidateAddressResult,
   WalletBalanceResult
+  ,
+  WitnessRuleJson
 } from "../src/index.js";
 import type { RpcClient } from "../src/index.js";
 
@@ -142,9 +145,9 @@ type _InvokeStorageChange = Assert<IsEqual<InvokeDiagnosticsResult["storagechang
 type _PendingSignature = Assert<IsEqual<NonNullable<InvokeResult["pendingsignature"]>, PendingSignatureResult>>;
 type _PendingSignatureItem = Assert<IsEqual<PendingSignatureResult["items"][string], PendingSignatureContextItem>>;
 type _Nep11Properties = Assert<IsEqual<GetNep11PropertiesResult[string], GetNep11PropertyValueResult>>;
-type _SignerRules = Assert<IsEqual<NonNullable<GetRawTransactionResult["signers"][number]["rules"]>[number], ReturnType<import("../src/index.js").WitnessRule["toJSON"]>>>;
-type _RawTxAttributes = Assert<IsEqual<GetRawTransactionResult["attributes"][number], ReturnType<import("../src/index.js").TxAttribute["toJSON"]>>>;
-type _RelayTxAttributes = Assert<IsEqual<RelayTransactionResult["attributes"][number], ReturnType<import("../src/index.js").TxAttribute["toJSON"]>>>;
+type _SignerRules = Assert<IsEqual<NonNullable<GetRawTransactionResult["signers"][number]["rules"]>[number], WitnessRuleJson>>;
+type _RawTxAttributes = Assert<IsEqual<GetRawTransactionResult["attributes"][number], TxAttributeJson>>;
+type _RelayTxAttributes = Assert<IsEqual<RelayTransactionResult["attributes"][number], TxAttributeJson>>;
 type _StackUnionBoolean = Assert<IsEqual<Extract<RpcStackItemJson, { type: "Boolean" }>, RpcBooleanStackItemJson>>;
 type _StackUnionInteger = Assert<IsEqual<Extract<RpcStackItemJson, { type: "Integer" }>, RpcIntegerStackItemJson>>;
 type _StackUnionByteString = Assert<IsEqual<Extract<RpcStackItemJson, { type: "ByteString" }>, RpcByteStringStackItemJson>>;

@@ -4,7 +4,52 @@ import { H160, H256 } from "./hash.js";
 import { PublicKey } from "./keypair.js";
 import { BinaryReader, BinaryWriter, serialize } from "./serializing.js";
 import { Witness, WitnessScope, witnessScopeName } from "./witness.js";
-import { WitnessRule } from "./witness-rule.js";
+import { WitnessRule, WitnessRuleJson } from "./witness-rule.js";
+
+export interface SignerJson {
+  account: string;
+  scopes: string;
+  allowedcontracts: string[];
+  allowedgroups: string[];
+  rules: WitnessRuleJson[];
+}
+
+export interface BaseTxAttributeJson {
+  type: string;
+}
+
+export interface HighPriorityAttributeJson {
+  type: "HighPriority";
+}
+
+export interface OracleResponseAttributeJson {
+  type: "OracleResponse";
+  id: string;
+  code: string;
+  result: string;
+}
+
+export interface NotValidBeforeAttributeJson {
+  type: "NotValidBefore";
+  height: number;
+}
+
+export interface ConflictsAttributeJson {
+  type: "Conflicts";
+  hash: string;
+}
+
+export interface NotaryAssistedAttributeJson {
+  type: "NotaryAssisted";
+  nkeys: number;
+}
+
+export type TxAttributeJson =
+  | HighPriorityAttributeJson
+  | OracleResponseAttributeJson
+  | NotValidBeforeAttributeJson
+  | ConflictsAttributeJson
+  | NotaryAssistedAttributeJson;
 
 function sha256(data: Uint8Array): Uint8Array {
   return createHash("sha256").update(data).digest();
@@ -41,13 +86,7 @@ export class Signer {
     this.rules = rules;
   }
 
-  public toJSON(): {
-    account: string;
-    scopes: string;
-    allowedcontracts: string[];
-    allowedgroups: string[];
-    rules: ReturnType<WitnessRule["toJSON"]>[];
-  } {
+  public toJSON(): SignerJson {
     return {
       account: this.account.toString(),
       scopes: witnessScopeName(this.scopes),
@@ -57,13 +96,7 @@ export class Signer {
     };
   }
 
-  public to_json(): {
-    account: string;
-    scopes: string;
-    allowedcontracts: string[];
-    allowedgroups: string[];
-    rules: ReturnType<WitnessRule["toJSON"]>[];
-  } {
+  public to_json(): SignerJson {
     return this.toJSON();
   }
 
@@ -137,11 +170,11 @@ export class TxAttribute {
     }
   }
 
-  public toJSON(): { type: string } {
-    return { type: TxAttributeType[this.type] };
+  public toJSON(): TxAttributeJson {
+    return { type: TxAttributeType[this.type] as TxAttributeJson["type"] } as TxAttributeJson;
   }
 
-  public to_json(): { type: string } {
+  public to_json(): TxAttributeJson {
     return this.toJSON();
   }
 }
@@ -149,6 +182,14 @@ export class TxAttribute {
 export class HighPriorityAttribute extends TxAttribute {
   public constructor() {
     super(TxAttributeType.HighPriority);
+  }
+
+  public override toJSON(): HighPriorityAttributeJson {
+    return { type: "HighPriority" };
+  }
+
+  public override to_json(): HighPriorityAttributeJson {
+    return this.toJSON();
   }
 }
 
@@ -168,16 +209,16 @@ export class OracleResponseAttribute extends TxAttribute {
     writer.writeVarBytes(this.result);
   }
 
-  public override toJSON(): { type: string; id: string; code: string; result: string } {
+  public override toJSON(): OracleResponseAttributeJson {
     return {
-      type: TxAttributeType[this.type],
+      type: "OracleResponse",
       id: this.id.toString(),
       code: OracleResponseCode[this.code],
       result: bytesToBase64(this.result)
     };
   }
 
-  public override to_json(): { type: string; id: string; code: string; result: string } {
+  public override to_json(): OracleResponseAttributeJson {
     return this.toJSON();
   }
 }
@@ -192,11 +233,11 @@ export class NotValidBeforeAttribute extends TxAttribute {
     writer.writeUInt32LE(this.height);
   }
 
-  public override toJSON(): { type: string; height: number } {
-    return { type: TxAttributeType[this.type], height: this.height };
+  public override toJSON(): NotValidBeforeAttributeJson {
+    return { type: "NotValidBefore", height: this.height };
   }
 
-  public override to_json(): { type: string; height: number } {
+  public override to_json(): NotValidBeforeAttributeJson {
     return this.toJSON();
   }
 }
@@ -211,11 +252,11 @@ export class ConflictsAttribute extends TxAttribute {
     this.hash.marshalTo(writer);
   }
 
-  public override toJSON(): { type: string; hash: string } {
-    return { type: TxAttributeType[this.type], hash: this.hash.toString() };
+  public override toJSON(): ConflictsAttributeJson {
+    return { type: "Conflicts", hash: this.hash.toString() };
   }
 
-  public override to_json(): { type: string; hash: string } {
+  public override to_json(): ConflictsAttributeJson {
     return this.toJSON();
   }
 }
@@ -230,11 +271,11 @@ export class NotaryAssistedAttribute extends TxAttribute {
     writer.writeUInt8(this.nKeys);
   }
 
-  public override toJSON(): { type: string; nkeys: number } {
-    return { type: TxAttributeType[this.type], nkeys: this.nKeys };
+  public override toJSON(): NotaryAssistedAttributeJson {
+    return { type: "NotaryAssisted", nkeys: this.nKeys };
   }
 
-  public override to_json(): { type: string; nkeys: number } {
+  public override to_json(): NotaryAssistedAttributeJson {
     return this.toJSON();
   }
 }
@@ -347,8 +388,8 @@ export class Tx {
     netfee: string;
     validuntilblock: number;
     script: string;
-    signers: ReturnType<Signer["toJSON"]>[];
-    attributes: ReturnType<TxAttribute["toJSON"]>[];
+    signers: SignerJson[];
+    attributes: TxAttributeJson[];
     witnesses: ReturnType<Witness["toJSON"]>[];
   } {
     return {
@@ -371,8 +412,8 @@ export class Tx {
     netfee: string;
     validuntilblock: number;
     script: string;
-    signers: ReturnType<Signer["toJSON"]>[];
-    attributes: ReturnType<TxAttribute["toJSON"]>[];
+    signers: SignerJson[];
+    attributes: TxAttributeJson[];
     witnesses: ReturnType<Witness["toJSON"]>[];
   } {
     return this.toJSON();

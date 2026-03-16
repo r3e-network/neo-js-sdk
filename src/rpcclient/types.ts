@@ -1,7 +1,7 @@
 import type { H160, H256 } from "../core/hash.js";
 import type { PublicKey } from "../core/keypair.js";
-import type { Signer, Tx, TxAttribute } from "../core/tx.js";
-import type { WitnessRule } from "../core/witness-rule.js";
+import type { Signer, Tx, SignerJson, TxAttributeJson } from "../core/tx.js";
+import type { WitnessRuleJson } from "../core/witness-rule.js";
 
 export interface JsonRpcRequest {
   jsonrpc: "2.0";
@@ -403,7 +403,7 @@ export interface RpcSignerJson {
   scopes: string;
   allowedcontracts?: string[];
   allowedgroups?: string[];
-  rules?: ReturnType<WitnessRule["toJSON"]>[];
+  rules?: WitnessRuleJson[];
 }
 
 export interface GetRawTransactionResult {
@@ -415,7 +415,7 @@ export interface GetRawTransactionResult {
   sysfee: string;
   netfee: string;
   validuntilblock: number;
-  attributes: ReturnType<TxAttribute["toJSON"]>[];
+  attributes: TxAttributeJson[];
   signers: RpcSignerJson[];
   script: string;
   witnesses: RpcWitnessJson[];
@@ -567,7 +567,7 @@ export interface RelayTransactionResult {
   sysfee: string;
   netfee: string;
   validuntilblock: number;
-  attributes: ReturnType<TxAttribute["toJSON"]>[];
+  attributes: TxAttributeJson[];
   signers: RpcSignerJson[];
   script: string;
   witnesses: RpcWitnessJson[];
