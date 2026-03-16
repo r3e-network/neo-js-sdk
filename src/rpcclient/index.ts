@@ -3,14 +3,35 @@ import { H160, H256 } from "../core/hash.js";
 import { PublicKey } from "../core/keypair.js";
 import { Signer, Tx } from "../core/tx.js";
 import type {
+  CancelTransactionResult,
+  CloseWalletResult,
+  DumpPrivKeyResult,
+  FindStatesResult,
+  FindStorageResult,
   GetApplicationLogResult,
   GetBlockHeaderCountResult,
   GetCandidatesResult,
+  GetContractStateResult,
   GetConnectionCountResult,
+  GetNativeContractsResult,
+  GetNep11BalancesResult,
+  GetNep11PropertiesResult,
+  GetNep11TransfersResult,
+  GetNep17BalancesResult,
+  GetNep17TransfersResult,
   GetPeersResult,
+  GetProofResult,
+  GetRawMemPoolResult,
   GetRawTransactionResult,
+  GetStateHeightResult,
+  GetStateResult,
+  GetStorageResult,
   GetStateRootResult,
+  GetUnclaimedGasResult,
   GetVersionResult,
+  GetWalletUnclaimedGasResult,
+  GetNewAddressResult,
+  ImportPrivKeyResult,
   InvokeParameterJson,
   InvokeContractVerifyResult,
   InvokeResult,
@@ -21,9 +42,14 @@ import type {
   JsonRpcTransport,
   ListAddressResult,
   ListPluginsResult,
-  RpcClientOptions
-  ,
+  NetworkFeeResult,
+  OpenWalletResult,
+  RelayTransactionResult,
+  RpcClientOptions,
   SendRawTransactionResult,
+  SubmitBlockResult,
+  TerminateSessionResult,
+  TraverseIteratorResult,
   ValidateAddressResult,
   WalletBalanceResult
 } from "./types.js";
@@ -427,31 +453,31 @@ export class RpcClient {
     return this.getConnectionCount();
   }
 
-  public getContractState(scriptHash: H160 | string): Promise<unknown> {
+  public getContractState(scriptHash: H160 | string): Promise<GetContractStateResult> {
     return this.send("getcontractstate", [serializeHash(scriptHash)]);
   }
 
-  public get_contract_state(scriptHash: H160 | string): Promise<unknown> {
+  public get_contract_state(scriptHash: H160 | string): Promise<GetContractStateResult> {
     return this.getContractState(scriptHash);
   }
 
-  public getNativeContracts(): Promise<unknown> {
+  public getNativeContracts(): Promise<GetNativeContractsResult> {
     return this.send("getnativecontracts");
   }
 
-  public get_native_contracts(): Promise<unknown> {
+  public get_native_contracts(): Promise<GetNativeContractsResult> {
     return this.getNativeContracts();
   }
 
-  public getNep11Balances(account: string): Promise<unknown> {
+  public getNep11Balances(account: string): Promise<GetNep11BalancesResult> {
     return this.send("getnep11balances", [account]);
   }
 
-  public getNep11Properties(contractHash: H160 | string, tokenId: string): Promise<unknown> {
+  public getNep11Properties(contractHash: H160 | string, tokenId: string): Promise<GetNep11PropertiesResult> {
     return this.send("getnep11properties", [serializeHash(contractHash), tokenId]);
   }
 
-  public getNep11Transfers(account: string, startTime?: string, endTime?: string): Promise<unknown> {
+  public getNep11Transfers(account: string, startTime?: string, endTime?: string): Promise<GetNep11TransfersResult> {
     const params: unknown[] = [account];
     if (startTime !== undefined) {
       params.push(startTime);
@@ -462,11 +488,11 @@ export class RpcClient {
     return this.send("getnep11transfers", params);
   }
 
-  public getNep17Balances(account: string): Promise<unknown> {
+  public getNep17Balances(account: string): Promise<GetNep17BalancesResult> {
     return this.send("getnep17balances", [account]);
   }
 
-  public getNep17Transfers(account: string, startTime?: string, endTime?: string): Promise<unknown> {
+  public getNep17Transfers(account: string, startTime?: string, endTime?: string): Promise<GetNep17TransfersResult> {
     const params: unknown[] = [account];
     if (startTime !== undefined) {
       params.push(startTime);
@@ -477,7 +503,7 @@ export class RpcClient {
     return this.send("getnep17transfers", params);
   }
 
-  public getNextBlockValidators(): Promise<unknown> {
+  public getNextBlockValidators(): Promise<GetCandidatesResult> {
     return this.send("getnextblockvalidators");
   }
 
@@ -489,7 +515,7 @@ export class RpcClient {
     return this.getPeers();
   }
 
-  public getRawMemPool(includeUnverified?: boolean): Promise<unknown> {
+  public getRawMemPool(includeUnverified?: boolean): Promise<GetRawMemPoolResult> {
     return includeUnverified === undefined
       ? this.send("getrawmempool")
       : this.send("getrawmempool", [includeUnverified]);
@@ -499,7 +525,7 @@ export class RpcClient {
     return this.send("getrawtransaction", [serializeHash(hash), verbose]);
   }
 
-  public getStateHeight(): Promise<unknown> {
+  public getStateHeight(): Promise<GetStateHeightResult> {
     return this.send("getstateheight");
   }
 
@@ -507,23 +533,23 @@ export class RpcClient {
     return this.send("getstateroot", [index]);
   }
 
-  public getProof(rootHash: H256 | string, contractHash: H160 | string, key: Uint8Array | string): Promise<unknown> {
+  public getProof(rootHash: H256 | string, contractHash: H160 | string, key: Uint8Array | string): Promise<GetProofResult> {
     return this.send("getproof", [serializeHash(rootHash), serializeHash(contractHash), encodeStorageKey(key)]);
   }
 
-  public verifyProof(rootHash: H256 | string, proof: Uint8Array | string): Promise<unknown> {
+  public verifyProof(rootHash: H256 | string, proof: Uint8Array | string): Promise<GetProofResult> {
     return this.send("verifyproof", [serializeHash(rootHash), encodeStorageKey(proof)]);
   }
 
-  public getState(rootHash: H256 | string, contractHash: H160 | string, key: Uint8Array | string): Promise<unknown> {
+  public getState(rootHash: H256 | string, contractHash: H160 | string, key: Uint8Array | string): Promise<GetStateResult> {
     return this.send("getstate", [serializeHash(rootHash), serializeHash(contractHash), encodeStorageKey(key)]);
   }
 
-  public getStorage(scriptHash: H160 | string, key: Uint8Array | string): Promise<unknown> {
+  public getStorage(scriptHash: H160 | string, key: Uint8Array | string): Promise<GetStorageResult> {
     return this.send("getstorage", [serializeHash(scriptHash), encodeStorageKey(key)]);
   }
 
-  public findStorage(scriptHash: H160 | string, prefix: Uint8Array | string, start = 0): Promise<unknown> {
+  public findStorage(scriptHash: H160 | string, prefix: Uint8Array | string, start = 0): Promise<FindStorageResult> {
     return this.send("findstorage", [serializeHash(scriptHash), encodeStorageKey(prefix), start]);
   }
 
@@ -533,7 +559,7 @@ export class RpcClient {
     prefix: Uint8Array | string,
     from?: Uint8Array | string,
     count?: number
-  ): Promise<unknown> {
+  ): Promise<FindStatesResult> {
     const params: unknown[] = [
       serializeHash(rootHash),
       serializeHash(contractHash),
@@ -554,7 +580,7 @@ export class RpcClient {
     return this.send("gettransactionheight", [serializeHash(hash)]);
   }
 
-  public getUnclaimedGas(address: string): Promise<unknown> {
+  public getUnclaimedGas(address: string): Promise<GetUnclaimedGasResult> {
     return this.send("getunclaimedgas", [address]);
   }
 
@@ -570,19 +596,19 @@ export class RpcClient {
     return this.getVersion();
   }
 
-  public openWallet(path: string, password: string): Promise<unknown> {
+  public openWallet(path: string, password: string): Promise<OpenWalletResult> {
     return this.send("openwallet", [path, password]);
   }
 
-  public closeWallet(): Promise<unknown> {
+  public closeWallet(): Promise<CloseWalletResult> {
     return this.send("closewallet");
   }
 
-  public dumpPrivKey(address: string): Promise<unknown> {
+  public dumpPrivKey(address: string): Promise<DumpPrivKeyResult> {
     return this.send("dumpprivkey", [address]);
   }
 
-  public getNewAddress(): Promise<unknown> {
+  public getNewAddress(): Promise<GetNewAddressResult> {
     return this.send("getnewaddress");
   }
 
@@ -590,11 +616,11 @@ export class RpcClient {
     return this.send("getwalletbalance", [serializeHash(assetId)]);
   }
 
-  public getWalletUnclaimedGas(): Promise<unknown> {
+  public getWalletUnclaimedGas(): Promise<GetWalletUnclaimedGasResult> {
     return this.send("getwalletunclaimedgas");
   }
 
-  public importPrivKey(wif: string): Promise<unknown> {
+  public importPrivKey(wif: string): Promise<ImportPrivKeyResult> {
     return this.send("importprivkey", [wif]);
   }
 
@@ -647,23 +673,23 @@ export class RpcClient {
     return this.invokeContractVerify(contractHash, args, signers);
   }
 
-  public invokeScript(script: Uint8Array | string, signers: Signer[] = []): Promise<unknown> {
+  public invokeScript(script: Uint8Array | string, signers: Signer[] = []): Promise<InvokeResult> {
     return this.send("invokescript", [encodeBinary(script), serializeSigners(signers)]);
   }
 
-  public invoke_script(script: Uint8Array | string, signers: Signer[] = []): Promise<unknown> {
+  public invoke_script(script: Uint8Array | string, signers: Signer[] = []): Promise<InvokeResult> {
     return this.invokeScript(script, signers);
   }
 
-  public traverseIterator(sessionId: string, iteratorId: string, count: number): Promise<unknown> {
+  public traverseIterator(sessionId: string, iteratorId: string, count: number): Promise<TraverseIteratorResult> {
     return this.send("traverseiterator", [sessionId, iteratorId, count]);
   }
 
-  public traverse_iterator(sessionId: string, iteratorId: string, count: number): Promise<unknown> {
+  public traverse_iterator(sessionId: string, iteratorId: string, count: number): Promise<TraverseIteratorResult> {
     return this.traverseIterator(sessionId, iteratorId, count);
   }
 
-  public terminateSession(sessionId: string): Promise<unknown> {
+  public terminateSession(sessionId: string): Promise<TerminateSessionResult> {
     return this.send("terminatesession", [sessionId]);
   }
 
@@ -697,7 +723,7 @@ export class RpcClient {
     to: string,
     amount: bigint | number | string,
     signers: Array<H160 | string> = []
-  ): Promise<unknown> {
+  ): Promise<RelayTransactionResult> {
     const params: unknown[] = [
       serializeTransferAsset(assetId),
       from,
@@ -716,7 +742,7 @@ export class RpcClient {
     transfers: Array<{ asset: H160 | string; value: bigint | number | string; address: string }>,
     from?: string,
     signers: Array<H160 | string> = []
-  ): Promise<unknown> {
+  ): Promise<RelayTransactionResult> {
     const serializedTransfers = transfers.map((transfer) => ({
       asset: serializeTransferAsset(transfer.asset),
       value: serializeTransferValue(transfer.value),
@@ -739,7 +765,7 @@ export class RpcClient {
     assetId: H160 | string,
     to: string,
     amount: bigint | number | string
-  ): Promise<unknown> {
+  ): Promise<RelayTransactionResult> {
     return this.send("sendtoaddress", [
       serializeTransferAsset(assetId),
       to,
@@ -747,11 +773,11 @@ export class RpcClient {
     ]);
   }
 
-  public submitBlock(block: Uint8Array | string): Promise<unknown> {
+  public submitBlock(block: Uint8Array | string): Promise<SubmitBlockResult> {
     return this.send("submitblock", [encodeBinary(block)]);
   }
 
-  public submit_block(block: Uint8Array | string): Promise<unknown> {
+  public submit_block(block: Uint8Array | string): Promise<SubmitBlockResult> {
     return this.submitBlock(block);
   }
 
@@ -763,7 +789,7 @@ export class RpcClient {
     return this.validateAddress(address);
   }
 
-  public cancelTx(txHash: H256 | string, signers: Array<H160 | string> = [], extraFee: bigint | number = 0): Promise<unknown> {
+  public cancelTx(txHash: H256 | string, signers: Array<H160 | string> = [], extraFee: bigint | number = 0): Promise<CancelTransactionResult> {
     return this.send("canceltx", [
       serializeHash(txHash),
       signers.map((signer) => serializeHash(signer)),
@@ -771,7 +797,7 @@ export class RpcClient {
     ]);
   }
 
-  public cancel_tx(txHash: H256 | string, signers: Array<H160 | string> = [], extraFee: bigint | number = 0): Promise<unknown> {
+  public cancel_tx(txHash: H256 | string, signers: Array<H160 | string> = [], extraFee: bigint | number = 0): Promise<CancelTransactionResult> {
     return this.cancelTx(txHash, signers, extraFee);
   }
 
@@ -779,7 +805,7 @@ export class RpcClient {
     txHash: H256 | string,
     signers: Array<H160 | string> = [],
     extraFee?: bigint | number | string
-  ): Promise<unknown> {
+  ): Promise<CancelTransactionResult> {
     const params: unknown[] = [
       serializeHash(txHash),
       signers.map((signer) => serializeHash(signer))
@@ -790,7 +816,7 @@ export class RpcClient {
     return this.send("canceltransaction", params);
   }
 
-  public calculateNetworkFee(tx: Tx | Uint8Array | string): Promise<unknown> {
+  public calculateNetworkFee(tx: Tx | Uint8Array | string): Promise<NetworkFeeResult> {
     return this.send("calculatenetworkfee", [encodeBinary(tx)]);
   }
 }

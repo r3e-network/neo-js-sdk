@@ -94,6 +94,81 @@ export interface GetApplicationLogResult {
   executions: ApplicationLogExecution[];
 }
 
+export interface GetContractStateResult {
+  id: number;
+  updatecounter: number;
+  hash: string;
+  nef: Record<string, unknown>;
+  manifest: Record<string, unknown>;
+}
+
+export type GetNativeContractsResult = GetContractStateResult[];
+
+export interface Nep11TokenBalance {
+  tokenid: string;
+  amount: string;
+  lastupdatedblock: number;
+}
+
+export interface Nep11Balance {
+  assethash: string;
+  name?: string;
+  symbol?: string;
+  decimals?: string | number;
+  tokens: Nep11TokenBalance[];
+}
+
+export interface GetNep11BalancesResult {
+  address: string;
+  balance: Nep11Balance[];
+}
+
+export type GetNep11PropertiesResult = Record<string, unknown>;
+
+export interface Nep11TransferEvent {
+  timestamp: number;
+  assethash: string;
+  transferaddress: string | null;
+  amount: string;
+  blockindex: number;
+  transfernotifyindex: number;
+  txhash: string;
+  tokenid: string;
+}
+
+export interface GetNep11TransfersResult {
+  address: string;
+  sent: Nep11TransferEvent[];
+  received: Nep11TransferEvent[];
+}
+
+export interface Nep17Balance {
+  assethash: string;
+  amount: string;
+  lastupdatedblock: number;
+}
+
+export interface GetNep17BalancesResult {
+  address: string;
+  balance: Nep17Balance[];
+}
+
+export interface Nep17TransferEvent {
+  timestamp: number;
+  assethash: string;
+  transferaddress: string | null;
+  amount: string;
+  blockindex: number;
+  transfernotifyindex: number;
+  txhash: string;
+}
+
+export interface GetNep17TransfersResult {
+  address: string;
+  sent: Nep17TransferEvent[];
+  received: Nep17TransferEvent[];
+}
+
 export interface RpcValidatorResult {
   publickey: string;
   votes: string | number;
@@ -190,6 +265,47 @@ export interface GetRawTransactionResult {
   vm_state?: string;
 }
 
+export interface GetRawMemPoolVerboseResult {
+  height: number;
+  verified: string[];
+  unverified: string[];
+}
+
+export type GetRawMemPoolResult = string[] | GetRawMemPoolVerboseResult;
+
+export interface GetStateHeightResult {
+  localrootindex?: number | null;
+  validatedrootindex?: number | null;
+}
+
+export type GetProofResult = string;
+export type VerifyProofResult = string;
+export type GetStateResult = string;
+export type GetStorageResult = string;
+
+export interface FindStorageEntry {
+  key: string;
+  value: string;
+}
+
+export interface FindStorageResult {
+  truncated: boolean;
+  next?: number;
+  results: FindStorageEntry[];
+}
+
+export interface FindStatesResult {
+  truncated: boolean;
+  results: FindStorageEntry[];
+  firstProof?: string;
+  lastProof?: string;
+}
+
+export interface GetUnclaimedGasResult {
+  unclaimed: string;
+  address: string;
+}
+
 export interface InvokeResult<TStackItem = RpcStackItemJson> {
   script: string;
   state: string;
@@ -213,6 +329,12 @@ export interface WalletBalanceResult {
   balance: string;
 }
 
+export type OpenWalletResult = boolean;
+export type CloseWalletResult = boolean;
+export type DumpPrivKeyResult = string;
+export type GetNewAddressResult = string;
+export type GetWalletUnclaimedGasResult = string;
+
 export interface RpcAccountResult {
   address: string;
   haskey: boolean;
@@ -221,6 +343,31 @@ export interface RpcAccountResult {
 }
 
 export type ListAddressResult = RpcAccountResult[];
+export type ImportPrivKeyResult = RpcAccountResult;
+
+export type TraverseIteratorResult = RpcStackItemJson[];
+export type TerminateSessionResult = boolean;
+
+export interface RelayTransactionResult {
+  hash: string;
+  size: number;
+  version: number;
+  nonce: number;
+  sender: string;
+  sysfee: string;
+  netfee: string;
+  validuntilblock: number;
+  attributes: unknown[];
+  signers: RpcSignerJson[];
+  script: string;
+  witnesses: RpcWitnessJson[];
+}
+
+export type CancelTransactionResult = RelayTransactionResult;
+export type SubmitBlockResult = SendRawTransactionResult;
+export interface NetworkFeeResult {
+  networkfee: string;
+}
 
 export interface SignerLikeJson {
   toJSON(): unknown;

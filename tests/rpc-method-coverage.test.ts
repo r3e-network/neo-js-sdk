@@ -53,7 +53,7 @@ describe("rpc method coverage", () => {
     ];
 
     for (const method of methods) {
-      expect(typeof (client as Record<string, unknown>)[method]).toBe("function");
+      expect(typeof ((client as unknown) as Record<string, unknown>)[method]).toBe("function");
     }
   });
 });

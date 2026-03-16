@@ -27,7 +27,7 @@ describe("ScriptBuilder", () => {
       .emitContractCall({
         scriptHash: contractHash.toString(),
         operation: "transfer",
-        args,
+        args: args as never,
         callFlags: sc.CallFlags.All
       })
       .build();
