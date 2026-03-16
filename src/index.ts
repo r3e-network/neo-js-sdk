@@ -85,6 +85,34 @@ export {
   testnet_endpoints,
   testnetEndpoints
 } from "./rpcclient/index.js";
+export type {
+  ApplicationLogExecution,
+  ApplicationLogInvocation,
+  GetApplicationLogResult,
+  GetBlockHeaderCountResult,
+  GetCandidatesResult,
+  GetConnectionCountResult,
+  GetPeersResult,
+  GetRawTransactionResult,
+  GetStateRootResult,
+  GetVersionProtocolResult,
+  GetVersionResult,
+  InvokeContractVerifyResult,
+  InvokeResult,
+  ListAddressResult,
+  ListPluginsResult,
+  NodePeer,
+  RpcAccountResult,
+  RpcNotification,
+  RpcPlugin,
+  RpcSignerJson,
+  RpcStackItemJson,
+  RpcValidatorResult,
+  RpcWitnessJson,
+  SendRawTransactionResult,
+  ValidateAddressResult,
+  WalletBalanceResult
+} from "./rpcclient/types.js";
 export {
   Account,
   Contract,

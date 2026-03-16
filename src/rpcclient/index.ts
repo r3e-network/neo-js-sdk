@@ -3,13 +3,29 @@ import { H160, H256 } from "../core/hash.js";
 import { PublicKey } from "../core/keypair.js";
 import { Signer, Tx } from "../core/tx.js";
 import type {
+  GetApplicationLogResult,
+  GetBlockHeaderCountResult,
+  GetCandidatesResult,
+  GetConnectionCountResult,
+  GetPeersResult,
+  GetRawTransactionResult,
+  GetStateRootResult,
+  GetVersionResult,
   InvokeParameterJson,
+  InvokeContractVerifyResult,
+  InvokeResult,
   JsonRpcLike,
   JsonRpcOptions,
   JsonRpcRequest,
   JsonRpcResponse,
   JsonRpcTransport,
+  ListAddressResult,
+  ListPluginsResult,
   RpcClientOptions
+  ,
+  SendRawTransactionResult,
+  ValidateAddressResult,
+  WalletBalanceResult
 } from "./types.js";
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -379,7 +395,7 @@ export class RpcClient {
     return this.getBlockHeader(indexOrHash, verbose);
   }
 
-  public getApplicationLog(hash: H256 | string, trigger?: string): Promise<unknown> {
+  public getApplicationLog(hash: H256 | string, trigger?: string): Promise<GetApplicationLogResult> {
     const params: unknown[] = [serializeHash(hash)];
     if (trigger !== undefined) {
       params.push(trigger);
@@ -387,27 +403,27 @@ export class RpcClient {
     return this.send("getapplicationlog", params);
   }
 
-  public get_application_log(hash: H256 | string, trigger?: string): Promise<unknown> {
+  public get_application_log(hash: H256 | string, trigger?: string): Promise<GetApplicationLogResult> {
     return this.getApplicationLog(hash, trigger);
   }
 
-  public getCandidates(): Promise<unknown> {
+  public getCandidates(): Promise<GetCandidatesResult> {
     return this.send("getcandidates");
   }
 
-  public getCommittee(): Promise<unknown> {
+  public getCommittee(): Promise<string[]> {
     return this.send("getcommittee");
   }
 
-  public get_committee(): Promise<unknown> {
+  public get_committee(): Promise<string[]> {
     return this.getCommittee();
   }
 
-  public getConnectionCount(): Promise<number> {
+  public getConnectionCount(): Promise<GetConnectionCountResult> {
     return this.send("getconnectioncount");
   }
 
-  public get_connection_count(): Promise<number> {
+  public get_connection_count(): Promise<GetConnectionCountResult> {
     return this.getConnectionCount();
   }
 
@@ -465,11 +481,11 @@ export class RpcClient {
     return this.send("getnextblockvalidators");
   }
 
-  public getPeers(): Promise<unknown> {
+  public getPeers(): Promise<GetPeersResult> {
     return this.send("getpeers");
   }
 
-  public get_peers(): Promise<unknown> {
+  public get_peers(): Promise<GetPeersResult> {
     return this.getPeers();
   }
 
@@ -479,7 +495,7 @@ export class RpcClient {
       : this.send("getrawmempool", [includeUnverified]);
   }
 
-  public getRawTransaction(hash: H256 | string, verbose = true): Promise<unknown> {
+  public getRawTransaction(hash: H256 | string, verbose = true): Promise<GetRawTransactionResult> {
     return this.send("getrawtransaction", [serializeHash(hash), verbose]);
   }
 
@@ -487,7 +503,7 @@ export class RpcClient {
     return this.send("getstateheight");
   }
 
-  public getStateRoot(index: number): Promise<unknown> {
+  public getStateRoot(index: number): Promise<GetStateRootResult> {
     return this.send("getstateroot", [index]);
   }
 
@@ -546,11 +562,11 @@ export class RpcClient {
     return this.send("getunspents", [address]);
   }
 
-  public getVersion(): Promise<unknown> {
+  public getVersion(): Promise<GetVersionResult> {
     return this.send("getversion");
   }
 
-  public get_version(): Promise<unknown> {
+  public get_version(): Promise<GetVersionResult> {
     return this.getVersion();
   }
 
@@ -570,7 +586,7 @@ export class RpcClient {
     return this.send("getnewaddress");
   }
 
-  public getWalletBalance(assetId: H160 | string): Promise<unknown> {
+  public getWalletBalance(assetId: H160 | string): Promise<WalletBalanceResult> {
     return this.send("getwalletbalance", [serializeHash(assetId)]);
   }
 
@@ -582,7 +598,7 @@ export class RpcClient {
     return this.send("importprivkey", [wif]);
   }
 
-  public listAddress(): Promise<unknown> {
+  public listAddress(): Promise<ListAddressResult> {
     return this.send("listaddress");
   }
 
@@ -591,7 +607,7 @@ export class RpcClient {
     method: string,
     args: InvokeParameters | InvokeParameterJson[] = [],
     signers: Signer[] = []
-  ): Promise<unknown> {
+  ): Promise<InvokeResult> {
     const serializedArgs = Array.isArray(args) ? args : args.toJSON();
     return this.send("invokefunction", [
       serializeHash(contractHash),
@@ -606,7 +622,7 @@ export class RpcClient {
     method: string,
     args: InvokeParameters | InvokeParameterJson[] = [],
     signers: Signer[] = []
-  ): Promise<unknown> {
+  ): Promise<InvokeResult> {
     return this.invokeFunction(contractHash, method, args, signers);
   }
 
@@ -614,7 +630,7 @@ export class RpcClient {
     contractHash: H160 | string,
     args: InvokeParameters | InvokeParameterJson[] = [],
     signers: Signer[] = []
-  ): Promise<unknown> {
+  ): Promise<InvokeContractVerifyResult> {
     const serializedArgs = Array.isArray(args) ? args : args.toJSON();
     return this.send("invokecontractverify", [
       serializeHash(contractHash),
@@ -627,7 +643,7 @@ export class RpcClient {
     contractHash: H160 | string,
     args: InvokeParameters | InvokeParameterJson[] = [],
     signers: Signer[] = []
-  ): Promise<unknown> {
+  ): Promise<InvokeContractVerifyResult> {
     return this.invokeContractVerify(contractHash, args, signers);
   }
 
@@ -651,27 +667,27 @@ export class RpcClient {
     return this.send("terminatesession", [sessionId]);
   }
 
-  public listPlugins(): Promise<unknown> {
+  public listPlugins(): Promise<ListPluginsResult> {
     return this.send("listplugins");
   }
 
-  public list_plugins(): Promise<unknown> {
+  public list_plugins(): Promise<ListPluginsResult> {
     return this.listPlugins();
   }
 
-  public sendRawTransaction(tx: Tx | Uint8Array | string): Promise<unknown> {
+  public sendRawTransaction(tx: Tx | Uint8Array | string): Promise<SendRawTransactionResult> {
     return this.send("sendrawtransaction", [encodeBinary(tx)]);
   }
 
-  public send_raw_transaction(tx: Tx | Uint8Array | string): Promise<unknown> {
+  public send_raw_transaction(tx: Tx | Uint8Array | string): Promise<SendRawTransactionResult> {
     return this.sendRawTransaction(tx);
   }
 
-  public sendTx(tx: Tx | Uint8Array | string): Promise<unknown> {
+  public sendTx(tx: Tx | Uint8Array | string): Promise<SendRawTransactionResult> {
     return this.send("sendrawtransaction", [encodeBinary(tx)]);
   }
 
-  public send_tx(tx: Tx | Uint8Array | string): Promise<unknown> {
+  public send_tx(tx: Tx | Uint8Array | string): Promise<SendRawTransactionResult> {
     return this.sendTx(tx);
   }
 
@@ -739,11 +755,11 @@ export class RpcClient {
     return this.submitBlock(block);
   }
 
-  public validateAddress(address: string): Promise<unknown> {
+  public validateAddress(address: string): Promise<ValidateAddressResult> {
     return this.send("validateaddress", [address]);
   }
 
-  public validate_address(address: string): Promise<unknown> {
+  public validate_address(address: string): Promise<ValidateAddressResult> {
     return this.validateAddress(address);
   }
 
