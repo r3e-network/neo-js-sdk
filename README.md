@@ -18,6 +18,26 @@ Neo N3 JavaScript/TypeScript SDK inspired by `r3e-network/neo-python-sdk` and ex
 npm install @r3e/neo-js
 ```
 
+## Verification
+
+```bash
+npm run typecheck
+npm test
+npm run build
+```
+
+Optional live RPC smoke test against Neo testnet:
+
+```bash
+npm run test:integration
+```
+
+Override the default testnet endpoint if needed:
+
+```bash
+NEO_RPC_URL=https://your-rpc-node npm run test:integration
+```
+
 ## Usage
 
 ```ts
@@ -89,6 +109,8 @@ await reopened.decrypt("secret");
 ## Development
 
 ```bash
+npm run typecheck
 npm test
 npm run build
+npm run test:integration
 ```
