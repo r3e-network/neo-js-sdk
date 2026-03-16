@@ -57,11 +57,77 @@ export type GetBlockHeaderCountResult = number;
 export type GetConnectionCountResult = number;
 export type TransactionJsonResult = ReturnType<Tx["toJSON"]>;
 
-export interface RpcStackItemJson {
+export interface RpcBaseStackItemJson {
   type: string;
-  value?: unknown;
-  [key: string]: unknown;
 }
+
+export interface RpcBooleanStackItemJson extends RpcBaseStackItemJson {
+  type: "Boolean";
+  value: boolean;
+}
+
+export interface RpcIntegerStackItemJson extends RpcBaseStackItemJson {
+  type: "Integer";
+  value: string;
+}
+
+export interface RpcByteStringStackItemJson extends RpcBaseStackItemJson {
+  type: "ByteString";
+  value: string;
+}
+
+export interface RpcBufferStackItemJson extends RpcBaseStackItemJson {
+  type: "Buffer";
+  value: string;
+}
+
+export interface RpcPointerStackItemJson extends RpcBaseStackItemJson {
+  type: "Pointer";
+  value: number;
+}
+
+export interface RpcAnyStackItemJson extends RpcBaseStackItemJson {
+  type: "Any";
+  value?: string;
+}
+
+export interface RpcInteropInterfaceStackItemJson extends RpcBaseStackItemJson {
+  type: "InteropInterface";
+  interface?: string;
+  id?: string;
+}
+
+export interface RpcArrayStackItemJson extends RpcBaseStackItemJson {
+  type: "Array";
+  value: RpcStackItemJson[];
+}
+
+export interface RpcStructStackItemJson extends RpcBaseStackItemJson {
+  type: "Struct";
+  value: RpcStackItemJson[];
+}
+
+export interface RpcMapStackEntryJson {
+  key: RpcStackItemJson;
+  value: RpcStackItemJson;
+}
+
+export interface RpcMapStackItemJson extends RpcBaseStackItemJson {
+  type: "Map";
+  value: RpcMapStackEntryJson[];
+}
+
+export type RpcStackItemJson =
+  | RpcBooleanStackItemJson
+  | RpcIntegerStackItemJson
+  | RpcByteStringStackItemJson
+  | RpcBufferStackItemJson
+  | RpcPointerStackItemJson
+  | RpcAnyStackItemJson
+  | RpcInteropInterfaceStackItemJson
+  | RpcArrayStackItemJson
+  | RpcStructStackItemJson
+  | RpcMapStackItemJson;
 
 export interface RpcNotification {
   contract: string;

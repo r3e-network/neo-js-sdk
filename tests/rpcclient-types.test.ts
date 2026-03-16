@@ -57,6 +57,18 @@ import type {
   SubmitBlockResult,
   TerminateSessionResult,
   TraverseIteratorResult,
+  RpcAnyStackItemJson,
+  RpcArrayStackItemJson,
+  RpcBooleanStackItemJson,
+  RpcBufferStackItemJson,
+  RpcByteStringStackItemJson,
+  RpcInteropInterfaceStackItemJson,
+  RpcIntegerStackItemJson,
+  RpcMapStackEntryJson,
+  RpcMapStackItemJson,
+  RpcPointerStackItemJson,
+  RpcStackItemJson,
+  RpcStructStackItemJson,
   ValidateAddressResult,
   WalletBalanceResult
 } from "../src/index.js";
@@ -133,6 +145,17 @@ type _Nep11Properties = Assert<IsEqual<GetNep11PropertiesResult[string], GetNep1
 type _SignerRules = Assert<IsEqual<NonNullable<GetRawTransactionResult["signers"][number]["rules"]>[number], ReturnType<import("../src/index.js").WitnessRule["toJSON"]>>>;
 type _RawTxAttributes = Assert<IsEqual<GetRawTransactionResult["attributes"][number], ReturnType<import("../src/index.js").TxAttribute["toJSON"]>>>;
 type _RelayTxAttributes = Assert<IsEqual<RelayTransactionResult["attributes"][number], ReturnType<import("../src/index.js").TxAttribute["toJSON"]>>>;
+type _StackUnionBoolean = Assert<IsEqual<Extract<RpcStackItemJson, { type: "Boolean" }>, RpcBooleanStackItemJson>>;
+type _StackUnionInteger = Assert<IsEqual<Extract<RpcStackItemJson, { type: "Integer" }>, RpcIntegerStackItemJson>>;
+type _StackUnionByteString = Assert<IsEqual<Extract<RpcStackItemJson, { type: "ByteString" }>, RpcByteStringStackItemJson>>;
+type _StackUnionBuffer = Assert<IsEqual<Extract<RpcStackItemJson, { type: "Buffer" }>, RpcBufferStackItemJson>>;
+type _StackUnionPointer = Assert<IsEqual<Extract<RpcStackItemJson, { type: "Pointer" }>, RpcPointerStackItemJson>>;
+type _StackUnionAny = Assert<IsEqual<Extract<RpcStackItemJson, { type: "Any" }>, RpcAnyStackItemJson>>;
+type _StackUnionArray = Assert<IsEqual<Extract<RpcStackItemJson, { type: "Array" }>, RpcArrayStackItemJson>>;
+type _StackUnionStruct = Assert<IsEqual<Extract<RpcStackItemJson, { type: "Struct" }>, RpcStructStackItemJson>>;
+type _StackUnionMap = Assert<IsEqual<Extract<RpcStackItemJson, { type: "Map" }>, RpcMapStackItemJson>>;
+type _StackUnionInterop = Assert<IsEqual<Extract<RpcStackItemJson, { type: "InteropInterface" }>, RpcInteropInterfaceStackItemJson>>;
+type _StackMapEntry = Assert<IsEqual<RpcMapStackItemJson["value"][number], RpcMapStackEntryJson>>;
 
 const getBlockVerbose = (client: RpcClient) => client.getBlock("0x1", true);
 const getBlockRaw = (client: RpcClient) => client.getBlock("0x1", false);
