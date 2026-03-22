@@ -1,7 +1,7 @@
 {
   "name": "neo-js-sdk",
-  "version": "0.2.2",
-  "description": "Neo N3 JavaScript/TypeScript SDK with typed models, object-based RPC inputs, and comprehensive RPC coverage.",
+  "version": "0.2.3",
+  "description": "Neo N3 JavaScript/TypeScript SDK — successor to neo-js (no longer maintained). Typed models, object-based RPC inputs, full N3 RPC coverage.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/r3e-network/neo-js-sdk.git"
@@ -41,9 +41,12 @@
   "keywords": [
     "neo",
     "neo-n3",
+    "neo-js",
     "sdk",
     "javascript",
-    "typescript"
+    "typescript",
+    "blockchain",
+    "n3"
   ],
   "license": "MIT",
   "dependencies": {
