@@ -21,24 +21,12 @@ export class BinaryWriter {
     this.write(bytes);
   }
 
-  public write_var_bytes(data: BytesLike): void {
-    this.writeVarBytes(data);
-  }
-
   public writeVarString(value: string): void {
     this.writeVarBytes(new TextEncoder().encode(value));
   }
 
-  public write_var_string(value: string): void {
-    this.writeVarString(value);
-  }
-
   public writeBool(value: boolean): void {
     this.writeUInt8(value ? 1 : 0);
-  }
-
-  public write_bool(value: boolean): void {
-    this.writeBool(value);
   }
 
   public writeUInt8(value: number): void {
@@ -46,10 +34,6 @@ export class BinaryWriter {
       throw new Error("uint8 must be between 0 and 255");
     }
     this.write([value]);
-  }
-
-  public write_uint8(value: number): void {
-    this.writeUInt8(value);
   }
 
   public writeUInt16LE(value: number): void {
@@ -60,10 +44,6 @@ export class BinaryWriter {
     out[0] = value & 0xff;
     out[1] = (value >> 8) & 0xff;
     this.write(out);
-  }
-
-  public write_uint16_le(value: number): void {
-    this.writeUInt16LE(value);
   }
 
   public writeUInt32LE(value: number): void {
@@ -78,10 +58,6 @@ export class BinaryWriter {
     this.write(out);
   }
 
-  public write_uint32_le(value: number): void {
-    this.writeUInt32LE(value);
-  }
-
   public writeUInt64LE(value: bigint | number): void {
     const big = BigInt(value);
     if (big < 0n || big > 0xffff_ffff_ffff_ffffn) {
@@ -94,10 +70,6 @@ export class BinaryWriter {
       remaining >>= 8n;
     }
     this.write(out);
-  }
-
-  public write_uint64_le(value: bigint | number): void {
-    this.writeUInt64LE(value);
   }
 
   public writeVarInt(value: bigint | number): void {
@@ -128,10 +100,6 @@ export class BinaryWriter {
     throw new Error("var int exceeds 8 bytes");
   }
 
-  public write_var_int(value: bigint | number): void {
-    this.writeVarInt(value);
-  }
-
   public writeMultiple(items: Marshaled[]): void {
     this.writeVarInt(items.length);
     for (const item of items) {
@@ -139,16 +107,8 @@ export class BinaryWriter {
     }
   }
 
-  public write_multiple(items: Marshaled[]): void {
-    this.writeMultiple(items);
-  }
-
   public toBytes(): Uint8Array {
     return concatBytes(...this.chunks);
-  }
-
-  public to_bytes(): Uint8Array {
-    return this.toBytes();
   }
 }
 
@@ -163,7 +123,7 @@ export class BinaryReader {
 
   public read(length: number): Uint8Array {
     if (this.index + length > this.data.length) {
-      throw new Error("unexpected EOF");
+      throw new Error(`unexpected EOF: expected ${length} bytes, ${this.remaining()} available`);
     }
     const out = this.data.slice(this.index, this.index + length);
     this.index += length;
@@ -184,24 +144,12 @@ export class BinaryReader {
     return this.readUInt64LE();
   }
 
-  public read_var_int(): bigint {
-    return this.readVarInt();
-  }
-
   public readVarBytes(): Uint8Array {
     return this.read(Number(this.readVarInt()));
   }
 
-  public read_var_bytes(): Uint8Array {
-    return this.readVarBytes();
-  }
-
   public readVarString(): string {
     return new TextDecoder().decode(this.readVarBytes());
-  }
-
-  public read_var_string(): string {
-    return this.readVarString();
   }
 
   public readBool(): boolean {
@@ -212,16 +160,8 @@ export class BinaryReader {
     return value === 1;
   }
 
-  public read_bool(): boolean {
-    return this.readBool();
-  }
-
   public readUInt8(): number {
     return this.read(1)[0];
-  }
-
-  public read_uint8(): number {
-    return this.readUInt8();
   }
 
   public readUInt16LE(): number {
@@ -229,22 +169,9 @@ export class BinaryReader {
     return bytes[0] | (bytes[1] << 8);
   }
 
-  public read_uint16_le(): number {
-    return this.readUInt16LE();
-  }
-
   public readUInt32LE(): number {
     const bytes = this.read(4);
-    return (
-      bytes[0] +
-      bytes[1] * 0x100 +
-      bytes[2] * 0x10000 +
-      bytes[3] * 0x1000000
-    );
-  }
-
-  public read_uint32_le(): number {
-    return this.readUInt32LE();
+    return bytes[0] + bytes[1] * 0x100 + bytes[2] * 0x10000 + bytes[3] * 0x1000000;
   }
 
   public readUInt64LE(): bigint {
@@ -256,21 +183,16 @@ export class BinaryReader {
     return result;
   }
 
-  public read_uint64_le(): bigint {
-    return this.readUInt64LE();
-  }
-
   public readMultiple<T>(type: Unmarshalable<T>): T[] {
     const count = Number(this.readVarInt());
+    if (count > this.remaining()) {
+      throw new Error(`readMultiple: count ${count} exceeds remaining ${this.remaining()} bytes`);
+    }
     const out: T[] = [];
     for (let index = 0; index < count; index += 1) {
       out.push(type.unmarshalFrom(this));
     }
     return out;
-  }
-
-  public read_multiple<T>(type: Unmarshalable<T>): T[] {
-    return this.readMultiple(type);
   }
 }
 

@@ -43,10 +43,6 @@ export class PrivateKey {
     return new PublicKey(wallet.getPublicKeyFromPrivateKey(this.hex));
   }
 
-  public public_key(): PublicKey {
-    return this.publicKey();
-  }
-
   public sign(message: Uint8Array): Uint8Array {
     return hexToBytes(wallet.sign(bytesToHex(message), this.hex));
   }
@@ -58,16 +54,8 @@ export class PrivateKey {
     return new Witness(invocation, verification);
   }
 
-  public sign_witness(signData: Uint8Array): Witness {
-    return this.signWitness(signData);
-  }
-
   public toBytes(): Uint8Array {
     return hexToBytes(this.hex);
-  }
-
-  public to_bytes(): Uint8Array {
-    return this.toBytes();
   }
 }
 
@@ -86,24 +74,12 @@ export class PublicKey {
     return new H160(`0x${wallet.getScriptHashFromPublicKey(this.hex)}`);
   }
 
-  public get_script_hash(): H160 {
-    return this.getScriptHash();
-  }
-
   public getAddress(addressVersion = 53): string {
     return wallet.getAddressFromScriptHash(wallet.getScriptHashFromPublicKey(this.hex), addressVersion);
   }
 
-  public get_address(addressVersion = 53): string {
-    return this.getAddress(addressVersion);
-  }
-
   public getSignatureRedeemScript(): Uint8Array {
     return hexToBytes(wallet.getVerificationScriptFromPublicKey(this.hex));
-  }
-
-  public get_signature_redeem_script(): Uint8Array {
-    return this.getSignatureRedeemScript();
   }
 
   public verify(message: Uint8Array, signature: Uint8Array): boolean {
@@ -112,10 +88,6 @@ export class PublicKey {
 
   public toBytes(): Uint8Array {
     return hexToBytes(this.hex);
-  }
-
-  public to_bytes(): Uint8Array {
-    return this.toBytes();
   }
 
   public marshalTo(writer: BinaryWriter): void {

@@ -24,23 +24,27 @@ describe("wallet error handling", () => {
     });
 
     expect(() => account.sign(new Uint8Array([1]))).toThrow(/locked/);
-    expect(() => account.sign_witness(new Uint8Array([1]))).toThrow(/locked/);
-    expect(() => account.get_script_hash()).toThrow();
+    expect(() => account.signWitness(new Uint8Array([1]))).toThrow(/locked/);
+    expect(() => account.getScriptHash()).toThrow();
+    expect("sign_witness" in account).toBe(false);
+    expect("get_script_hash" in account).toBe(false);
   });
 
   it("covers wallet file and passphrase guard rails", async () => {
     const wallet = new Wallet({ name: "guard" });
-    expect(() => wallet.create_account()).toThrow(/passphrase is not set/);
+    expect(() => wallet.createAccount()).toThrow(/passphrase is not set/);
 
     const dir = await mkdtemp(join(tmpdir(), "neo-js-sdk-wallet-errors-"));
     cleanupPaths.push(dir);
     const path = join(dir, "wallet.json");
     await writeFile(path, "{}", "utf8");
 
-    expect(() => wallet.write_to_file(path)).toThrow(/already exists/);
+    expect(() => wallet.writeToFile(path)).toThrow(/already exists/);
+    expect("create_account" in wallet).toBe(false);
+    expect("write_to_file" in wallet).toBe(false);
   });
 
-  it("covers static wallet constructors and alias loaders", async () => {
+  it("covers static wallet constructors on the canonical names", async () => {
     const dir = await mkdtemp(join(tmpdir(), "neo-js-sdk-wallet-static-"));
     cleanupPaths.push(dir);
     const path = join(dir, "wallet.json");
@@ -55,15 +59,17 @@ describe("wallet error handling", () => {
       "utf8"
     );
 
-    const fromJson = Wallet.from_json({
+    const fromJson = Wallet.fromJSON({
       name: "from-json",
       version: "1.0",
       scrypt: { n: 16384, r: 8, p: 8 },
       accounts: []
     });
-    const opened = Wallet.open_nep6_wallet(path);
+    const opened = Wallet.openNep6Wallet(path);
 
     expect(fromJson.name).toBe("from-json");
     expect(opened.name).toBe("static");
+    expect("from_json" in Wallet).toBe(false);
+    expect("open_nep6_wallet" in Wallet).toBe(false);
   });
 });

@@ -1,3 +1,5 @@
+import { H160 } from "./core/hash.js";
+
 export const MAIN_NETWORK_ID = 860833102;
 export const TEST_NETWORK_ID = 894710606;
 export const ADDRESS_VERSION = 53;
@@ -19,24 +21,12 @@ export function mainNetworkId(): number {
   return MAIN_NETWORK_ID;
 }
 
-export function main_network_id(): number {
-  return mainNetworkId();
-}
-
 export function testNetworkId(): number {
   return TEST_NETWORK_ID;
 }
 
-export function test_network_id(): number {
-  return testNetworkId();
-}
-
 export function addressVersion(): number {
   return ADDRESS_VERSION;
-}
-
-export function address_version(): number {
-  return addressVersion();
 }
 
 export const neoContractHash = hashFactory(NEO_CONTRACT_HASH);
@@ -48,14 +38,3 @@ export const oracleContractHash = hashFactory(ORACLE_CONTRACT_HASH);
 export const policyContractHash = hashFactory(POLICY_CONTRACT_HASH);
 export const notaryContractHash = hashFactory(NOTARY_CONTRACT_HASH);
 export const roleManagementContractHash = hashFactory(ROLE_MANAGEMENT_CONTRACT_HASH);
-
-export const neo_contract_hash = neoContractHash;
-export const gas_contract_hash = gasContractHash;
-export const stdlib_contract_hash = stdlibContractHash;
-export const cryptolib_contract_hash = cryptolibContractHash;
-export const ledger_contract_hash = ledgerContractHash;
-export const oracle_contract_hash = oracleContractHash;
-export const policy_contract_hash = policyContractHash;
-export const notary_contract_hash = notaryContractHash;
-export const role_management_contract_hash = roleManagementContractHash;
-import { H160 } from "./core/hash.js";

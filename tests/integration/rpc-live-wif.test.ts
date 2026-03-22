@@ -10,11 +10,11 @@ import {
   Signer,
   Tx,
   WitnessScope,
-  gas_contract_hash,
+  gasContractHash,
   parseStackItemInteger,
   parseStackItemUtf8,
-  test_network_id,
-  testnet_endpoints
+  testNetworkId,
+  testnetEndpoints
 } from "../../src/index.js";
 
 const runLiveWif = process.env.RUN_NEO_LIVE === "1" && !!process.env.NEO_TEST_WIF;
@@ -27,7 +27,7 @@ describe.runIf(runLiveWif)("live rpc with testnet wif", () => {
     const publicKey = privateKey.publicKey();
     const address = publicKey.getAddress();
 
-    const client = new RpcClient(process.env.NEO_RPC_URL ?? testnet_endpoints(), {
+    const client = new RpcClient(process.env.NEO_RPC_URL ?? testnetEndpoints(), {
       endpointStrategy: "round-robin",
       retryTransportErrors: true
     });
@@ -36,29 +36,29 @@ describe.runIf(runLiveWif)("live rpc with testnet wif", () => {
       client.getBlockCount(),
       client.getBestBlockHash(),
       client.getVersion(),
-      client.validateAddress(address)
+      client.validateAddress({ address })
     ]);
 
     expect(blockCount).toBeGreaterThan(0);
     expect(bestBlockHash).toMatch(/^0x[0-9a-f]{64}$/i);
-    expect(version.protocol.network).toBe(test_network_id());
-    expect(isValidAddress).toBe(true);
+    expect(version.protocol.network).toBe(testNetworkId());
+    expect(isValidAddress.isvalid).toBe(true);
 
     const expectedAddress = new neonWallet.Account(wif).address;
     expect(address).toBe(expectedAddress);
 
-    const symbolResult = await client.invokeFunction(gas_contract_hash(), "symbol");
-    const decimalsResult = await client.invokeFunction(gas_contract_hash(), "decimals");
-    const balanceFunctionResult = await client.invokeFunction(
-      gas_contract_hash(),
-      "balanceOf",
-      new InvokeParameters().addHash160(publicKey.getScriptHash())
-    );
+    const symbolResult = await client.invokeFunction({ contractHash: gasContractHash(), method: "symbol" });
+    const decimalsResult = await client.invokeFunction({ contractHash: gasContractHash(), method: "decimals" });
+    const balanceFunctionResult = await client.invokeFunction({
+      contractHash: gasContractHash(),
+      method: "balanceOf",
+      args: new InvokeParameters().addHash160(publicKey.getScriptHash())
+    });
 
     const balanceScript = new ScriptBuilder()
-      .emitContractCall(gas_contract_hash(), "balanceOf", CallFlags.ReadOnly, [publicKey.getScriptHash()])
+      .emitContractCall(gasContractHash(), "balanceOf", CallFlags.ReadOnly, [publicKey.getScriptHash()])
       .toBytes();
-    const balanceScriptResult = await client.invokeScript(balanceScript);
+    const balanceScriptResult = await client.invokeScript({ script: balanceScript });
 
     expect(parseStackItemUtf8(symbolResult.stack[0])).toBe("GAS");
     expect(parseStackItemInteger(decimalsResult.stack[0])).toBe(8n);

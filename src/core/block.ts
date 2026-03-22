@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { encodeUInt32LE } from "../internal/bytes.js";
 import { H160, H256 } from "./hash.js";
 import { BinaryReader, BinaryWriter, serialize } from "./serializing.js";
 import { Tx } from "./tx.js";
@@ -24,7 +25,7 @@ export class Header {
     index,
     primaryIndex,
     nextConsensus,
-    witness
+    witness,
   }: {
     version: number;
     previousBlockHash: H256;
@@ -55,16 +56,7 @@ export class Header {
     const writer = new BinaryWriter();
     this.marshalUnsignedTo(writer);
     const digest = createHash("sha256").update(writer.toBytes()).digest();
-    const prefix = new Uint8Array(4);
-    prefix[0] = networkId & 0xff;
-    prefix[1] = (networkId >> 8) & 0xff;
-    prefix[2] = (networkId >> 16) & 0xff;
-    prefix[3] = (networkId >> 24) & 0xff;
-    return new Uint8Array([...prefix, ...digest]);
-  }
-
-  public get_sign_data(networkId: number): Uint8Array {
-    return this.getSignData(networkId);
+    return new Uint8Array([...encodeUInt32LE(networkId), ...digest]);
   }
 
   public marshalUnsignedTo(writer: BinaryWriter): void {
@@ -76,10 +68,6 @@ export class Header {
     writer.writeUInt32LE(this.index);
     writer.writeUInt8(this.primaryIndex);
     this.nextConsensus.marshalTo(writer);
-  }
-
-  public marshal_unsigned_to(writer: BinaryWriter): void {
-    this.marshalUnsignedTo(writer);
   }
 
   public marshalTo(writer: BinaryWriter): void {
@@ -97,16 +85,12 @@ export class Header {
       index: reader.readUInt32LE(),
       primaryIndex: reader.readUInt8(),
       nextConsensus: H160.unmarshalFrom(reader),
-      witness: Witness.unmarshalFrom(reader)
+      witness: Witness.unmarshalFrom(reader),
     });
   }
 
   public toBytes(): Uint8Array {
     return serialize(this);
-  }
-
-  public to_bytes(): Uint8Array {
-    return this.toBytes();
   }
 
   public toJSON(): {
@@ -129,19 +113,15 @@ export class Header {
       index: this.index,
       primaryindex: this.primaryIndex,
       nextconsensus: this.nextConsensus.toString(),
-      witness: this.witness.toJSON()
+      witness: this.witness.toJSON(),
     };
-  }
-
-  public to_json(): ReturnType<Header["toJSON"]> {
-    return this.toJSON();
   }
 }
 
 export class Block {
   public constructor(
     public readonly header: Header,
-    public readonly transactions: Tx[]
+    public readonly transactions: Tx[],
   ) {}
 
   public marshalTo(writer: BinaryWriter): void {
@@ -157,26 +137,18 @@ export class Block {
     return serialize(this);
   }
 
-  public to_bytes(): Uint8Array {
-    return this.toBytes();
-  }
-
   public toJSON(): ReturnType<Header["toJSON"]> & { tx: ReturnType<Tx["toJSON"]>[] } {
     return {
       ...this.header.toJSON(),
-      tx: this.transactions.map((transaction) => transaction.toJSON())
+      tx: this.transactions.map((transaction) => transaction.toJSON()),
     };
-  }
-
-  public to_json(): ReturnType<Header["toJSON"]> & { tx: ReturnType<Tx["toJSON"]>[] } {
-    return this.toJSON();
   }
 }
 
 export class TrimmedBlock {
   public constructor(
     public readonly header: Header,
-    public readonly transactions: H256[]
+    public readonly transactions: H256[],
   ) {}
 
   public marshalTo(writer: BinaryWriter): void {
@@ -192,18 +164,10 @@ export class TrimmedBlock {
     return serialize(this);
   }
 
-  public to_bytes(): Uint8Array {
-    return this.toBytes();
-  }
-
   public toJSON(): ReturnType<Header["toJSON"]> & { tx: string[] } {
     return {
       ...this.header.toJSON(),
-      tx: this.transactions.map((transaction) => transaction.toString())
+      tx: this.transactions.map((transaction) => transaction.toString()),
     };
-  }
-
-  public to_json(): ReturnType<Header["toJSON"]> & { tx: string[] } {
-    return this.toJSON();
   }
 }

@@ -1,46 +1,74 @@
-import { bytesToBase64, hexToBytes, toUint8Array } from "../internal/bytes.js";
+import { bytesToBase64, hexToBytes } from "../internal/bytes.js";
 import { H160, H256 } from "../core/hash.js";
 import { PublicKey } from "../core/keypair.js";
 import { Signer, type SignerJson, Tx } from "../core/tx.js";
 import type {
+  CalculateNetworkFeeInput,
+  CancelTransactionInput,
   Base64Encodable,
   BooleanLikeParam,
   CancelTransactionResult,
   CloseWalletResult,
   ContractParamLikeJson,
+  DumpPrivKeyInput,
   DumpPrivKeyResult,
+  FindStatesInput,
   FindStatesResult,
+  FindStorageInput,
   FindStorageResult,
+  GetApplicationLogInput,
   GetApplicationLogResult,
-  GetBlockHeaderVerboseResult,
+  GetBlockHashInput,
+  GetBlockHeaderInput,
   GetBlockHeaderCountResult,
+  GetBlockHeaderVerboseResult,
+  GetBlockInput,
   GetBlockVerboseResult,
   GetCandidatesResult,
-  GetContractStateResult,
   GetConnectionCountResult,
+  GetContractStateInput,
+  GetContractStateResult,
   GetNativeContractsResult,
+  GetNep11BalancesInput,
   GetNep11BalancesResult,
+  GetNep11PropertiesInput,
   GetNep11PropertiesResult,
+  GetNep17BalancesInput,
+  GetNep11TransfersInput,
   GetNep11TransfersResult,
   GetNep17BalancesResult,
+  GetNep17TransfersInput,
   GetNep17TransfersResult,
+  GetNewAddressResult,
   GetPeersResult,
+  GetProofInput,
   GetProofResult,
   GetRawMemPoolResult,
   GetRawMemPoolVerboseResult,
+  GetRawTransactionInput,
   GetRawTransactionResult,
+  GetStateInput,
   GetStateHeightResult,
   GetStateResult,
-  GetStorageResult,
+  GetStateRootInput,
   GetStateRootResult,
+  GetStorageInput,
+  GetStorageResult,
+  GetTransactionHeightInput,
+  GetUnclaimedGasInput,
   GetUnclaimedGasResult,
+  GetUnspentsInput,
   GetUnspentsResult,
   GetVersionResult,
+  GetWalletBalanceInput,
   GetWalletUnclaimedGasResult,
-  GetNewAddressResult,
+  ImportPrivKeyInput,
   ImportPrivKeyResult,
-  InvokeParameterJson,
   InvokeContractVerifyResult,
+  InvokeContractVerifyInput,
+  InvokeFunctionInput,
+  InvokeParameterJson,
+  InvokeScriptInput,
   InvokeResult,
   JsonRpcLike,
   JsonRpcOptions,
@@ -50,15 +78,27 @@ import type {
   ListAddressResult,
   ListPluginsResult,
   NetworkFeeResult,
+  OpenWalletInput,
   OpenWalletResult,
+  RpcBinaryPayload,
+  RpcInvokeArgsInput,
+  RpcSignerInput,
   RelayTransactionResult,
   RpcClientOptions,
   SendRawTransactionResult,
+  SendFromInput,
+  SendManyInput,
+  SendRawTransactionInput,
+  SendToAddressInput,
   SubmitBlockResult,
+  SubmitBlockInput,
   TerminateSessionResult,
+  TraverseIteratorInput,
   TraverseIteratorResult,
+  ValidateAddressInput,
   ValidateAddressResult,
-  WalletBalanceResult
+  VerifyProofInput,
+  WalletBalanceResult,
 } from "./types.js";
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -105,13 +145,13 @@ export enum RpcCode {
   OracleNotDesignatedNode = -605,
   UnsupportedState = -606,
   InvalidProof = -607,
-  ExecutionFailed = -608
+  ExecutionFailed = -608,
 }
 
 export class JsonRpcError extends Error {
   public constructor(
     public readonly code: number,
-    message: string
+    message: string,
   ) {
     super(message);
     this.name = "JsonRpcError";
@@ -122,11 +162,7 @@ export class JsonRpcError extends Error {
   }
 }
 
-async function defaultTransport(
-  url: string,
-  request: JsonRpcRequest,
-  timeoutMs: number
-): Promise<JsonRpcResponse> {
+async function defaultTransport(url: string, request: JsonRpcRequest, timeoutMs: number): Promise<JsonRpcResponse> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -134,10 +170,10 @@ async function defaultTransport(
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(request),
-      signal: controller.signal
+      signal: controller.signal,
     });
 
     return (await response.json()) as JsonRpcResponse;
@@ -177,28 +213,34 @@ function encodeStorageKey(value: Uint8Array | string): string {
   return bytesToBase64(hexToBytes(value));
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeToJson(item: any): unknown {
+  if (typeof item === "object" && item !== null) {
+    if (typeof item.toJSON === "function") {
+      return item.toJSON();
+    }
+    if (typeof item.toJson === "function") {
+      return item.toJson();
+    }
+  }
+  return item;
+}
+
 function serializeSigners(signers: Array<Signer | SignerJson | Record<string, unknown>> = []): unknown[] {
-  return signers.map((signer) => ("toJSON" in signer && typeof signer.toJSON === "function" ? signer.toJSON() : signer));
+  return signers.map(serializeToJson);
 }
 
-function serializeInvokeArgs(args: Array<InvokeParameterJson | ContractParamLikeJson | Record<string, unknown>>): unknown[] {
-  return args.map((arg) => ("toJson" in arg && typeof arg.toJson === "function" ? arg.toJson() : arg));
-}
-
-function serializeTransferAsset(value: H160 | string): string {
-  return serializeHash(value);
+function serializeInvokeArgs(
+  args: Array<InvokeParameterJson | ContractParamLikeJson | Record<string, unknown>>,
+): unknown[] {
+  return args.map(serializeToJson);
 }
 
 function serializeTransferValue(value: bigint | number | string): string {
   return typeof value === "string" ? value : BigInt(value).toString();
 }
 
-function serializeBooleanLike(value: BooleanLikeParam): 0 | 1 | boolean {
-  if (value === 0 || value === 1) {
-    return value;
-  }
-  return value;
-}
+type HashLike = H160 | H256 | string;
 
 export function mainnetEndpoints(): string[] {
   return [
@@ -206,12 +248,8 @@ export function mainnetEndpoints(): string[] {
     "http://seed2.neo.org:10332",
     "http://seed3.neo.org:10332",
     "http://seed4.neo.org:10332",
-    "http://seed5.neo.org:10332"
+    "http://seed5.neo.org:10332",
   ];
-}
-
-export function mainnet_endpoints(): string[] {
-  return mainnetEndpoints();
 }
 
 export function testnetEndpoints(): string[] {
@@ -220,12 +258,8 @@ export function testnetEndpoints(): string[] {
     "http://seed2t5.neo.org:20332",
     "http://seed3t5.neo.org:20332",
     "http://seed4t5.neo.org:20332",
-    "http://seed5t5.neo.org:20332"
+    "http://seed5t5.neo.org:20332",
   ];
-}
-
-export function testnet_endpoints(): string[] {
-  return testnetEndpoints();
 }
 
 export class InvokeParameters {
@@ -236,17 +270,9 @@ export class InvokeParameters {
     return this;
   }
 
-  public add_any(): this {
-    return this.addAny();
-  }
-
   public addBool(value: boolean): this {
     this.parameters.push({ type: "Boolean", value });
     return this;
-  }
-
-  public add_bool(value: boolean): this {
-    return this.addBool(value);
   }
 
   public addInteger(value: bigint | number): this {
@@ -254,17 +280,9 @@ export class InvokeParameters {
     return this;
   }
 
-  public add_integer(value: bigint | number): this {
-    return this.addInteger(value);
-  }
-
   public addHash160(value: H160 | string): this {
     this.parameters.push({ type: "Hash160", value: serializeHash(value) });
     return this;
-  }
-
-  public add_hash160(value: H160 | string): this {
-    return this.addHash160(value);
   }
 
   public addHash256(value: H256 | string): this {
@@ -272,26 +290,14 @@ export class InvokeParameters {
     return this;
   }
 
-  public add_hash256(value: H256 | string): this {
-    return this.addHash256(value);
-  }
-
   public addPublicKey(value: PublicKey): this {
     this.parameters.push({ type: "PublicKey", value: value.toString() });
     return this;
   }
 
-  public add_public_key(value: PublicKey): this {
-    return this.addPublicKey(value);
-  }
-
   public addString(value: string): this {
     this.parameters.push({ type: "String", value });
     return this;
-  }
-
-  public add_string(value: string): this {
-    return this.addString(value);
   }
 
   public addSignature(value: Uint8Array | string): this {
@@ -300,26 +306,14 @@ export class InvokeParameters {
     return this;
   }
 
-  public add_signature(value: Uint8Array | string): this {
-    return this.addSignature(value);
-  }
-
   public addByteArray(value: Uint8Array | string): this {
     const encoded = typeof value === "string" ? value : bytesToBase64(value);
     this.parameters.push({ type: "ByteArray", value: encoded });
     return this;
   }
 
-  public add_byte_array(value: Uint8Array | string): this {
-    return this.addByteArray(value);
-  }
-
   public toJSON(): InvokeParameterJson[] {
     return [...this.parameters];
-  }
-
-  public to_json(): InvokeParameterJson[] {
-    return this.toJSON();
   }
 }
 
@@ -349,7 +343,7 @@ export class JsonRpc implements JsonRpcLike {
       jsonrpc: "2.0",
       id: this.nextId,
       method,
-      params
+      params,
     };
     this.nextId += 1;
 
@@ -368,7 +362,9 @@ export class JsonRpc implements JsonRpcLike {
       try {
         const response = await this.transport(endpoint, request, this.timeoutMs);
         if ("error" in response && response.error) {
-          throw new JsonRpcError(response.error.code, response.error.message);
+          const code = response.error?.code ?? RpcCode.InternalError;
+          const message = response.error?.message ?? "unknown RPC error";
+          throw new JsonRpcError(code, message);
         }
         if (!("result" in response)) {
           throw new JsonRpcError(RpcCode.InvalidRequest, "response missing result");
@@ -381,7 +377,7 @@ export class JsonRpc implements JsonRpcLike {
 
         lastTransportError = new JsonRpcError(
           RpcCode.InternalError,
-          error instanceof Error ? error.message : String(error)
+          error instanceof Error ? error.message : String(error),
         );
         if (!this.retryTransportErrors) {
           break;
@@ -404,551 +400,366 @@ export class RpcClient {
     return this.jsonrpc.send<T>(method, params);
   }
 
+  private callNoParams<T>(method: string): Promise<T> {
+    return this.send(method);
+  }
+
+  private callSingleParam<T>(method: string, param: unknown): Promise<T> {
+    return this.send(method, [param]);
+  }
+
+  private callHashParam<T>(method: string, value: HashLike): Promise<T> {
+    return this.callSingleParam(method, serializeHash(value));
+  }
+
+  private callWithBooleanArg<T>(method: string, param: unknown, flag: BooleanLikeParam = 0): Promise<T> {
+    return this.send(method, [param, flag]);
+  }
+
+  private callEncodedPayload<TResponse>(method: string, payload: RpcBinaryPayload): Promise<TResponse> {
+    return this.callSingleParam(method, encodeBinary(payload));
+  }
+
+  private callAccountTimeRange<T>(method: string, account: string, startTime?: string, endTime?: string): Promise<T> {
+    const params: unknown[] = [account];
+    if (startTime !== undefined || endTime !== undefined) {
+      params.push(startTime ?? "");
+    }
+    if (endTime !== undefined) {
+      params.push(endTime);
+    }
+    return this.send(method, params);
+  }
+
+  private callStorageLookup<T>(method: string, scriptHash: H160 | string, key: Uint8Array | string): Promise<T> {
+    return this.send(method, [serializeHash(scriptHash), encodeStorageKey(key)]);
+  }
+
+  private serializeInvokeInput(args?: RpcInvokeArgsInput): unknown[] {
+    if (args === undefined) {
+      return [];
+    }
+    return Array.isArray(args) ? serializeInvokeArgs(args) : args.toJSON();
+  }
+
+  private serializeSignerInput(signers?: RpcSignerInput): unknown[] {
+    return serializeSigners(signers ?? []);
+  }
+
   public getBestBlockHash(): Promise<string> {
-    return this.send("getbestblockhash");
+    return this.callNoParams("getbestblockhash");
   }
 
-  public get_best_block_hash(): Promise<string> {
-    return this.getBestBlockHash();
-  }
-
-  public getBlock(indexOrHash: number | string, verbose: true | 1): Promise<GetBlockVerboseResult>;
-  public getBlock(indexOrHash: number | string, verbose?: false | 0): Promise<string>;
-  public getBlock(indexOrHash: number | string, verbose: BooleanLikeParam = 0): Promise<string | GetBlockVerboseResult> {
-    return this.send("getblock", [indexOrHash, serializeBooleanLike(verbose)]);
-  }
-
-  public get_block(indexOrHash: number | string, verbose: true | 1): Promise<GetBlockVerboseResult>;
-  public get_block(indexOrHash: number | string, verbose?: false | 0): Promise<string>;
-  public get_block(indexOrHash: number | string, verbose: BooleanLikeParam = true): Promise<string | GetBlockVerboseResult> {
-    return (verbose === true || verbose === 1) ? this.getBlock(indexOrHash, true) : this.getBlock(indexOrHash, false);
+  public getBlock(input: GetBlockInput & { verbose: true | 1 }): Promise<GetBlockVerboseResult>;
+  public getBlock(input: GetBlockInput & { verbose?: false | 0 }): Promise<string>;
+  public getBlock(input: GetBlockInput): Promise<string | GetBlockVerboseResult> {
+    return this.callWithBooleanArg("getblock", input.indexOrHash, input.verbose ?? 0);
   }
 
   public getBlockCount(): Promise<number> {
-    return this.send("getblockcount");
-  }
-
-  public get_block_count(): Promise<number> {
-    return this.getBlockCount();
+    return this.callNoParams("getblockcount");
   }
 
   public getBlockHeaderCount(): Promise<number> {
-    return this.send("getblockheadercount");
+    return this.callNoParams("getblockheadercount");
   }
 
-  public get_block_header_count(): Promise<number> {
-    return this.getBlockHeaderCount();
+  public getBlockHash(input: GetBlockHashInput): Promise<string> {
+    return this.callSingleParam("getblockhash", input.blockIndex);
   }
 
-  public getBlockHash(blockIndex: number): Promise<string> {
-    return this.send("getblockhash", [blockIndex]);
-  }
+  public getBlockHeader(input: GetBlockHeaderInput & { verbose: true | 1 }): Promise<GetBlockHeaderVerboseResult>;
+  public getBlockHeader(input: GetBlockHeaderInput & { verbose?: false | 0 }): Promise<string>;
+  public getBlockHeader(input: GetBlockHeaderInput): Promise<string | GetBlockHeaderVerboseResult> {
+    const blockHash = input.blockHash instanceof H256 ? input.blockHash.toString() : (input.blockHash ?? null);
+    const height = input.height ?? null;
+    const indexOrHash = input.indexOrHash ?? null;
+    const resolvedVerbose = input.verbose ?? 0;
 
-  public get_block_hash(blockIndex: number): Promise<string> {
-    return this.getBlockHash(blockIndex);
-  }
-
-  public getBlockHeader(indexOrHash: number | string, verbose: true | 1): Promise<GetBlockHeaderVerboseResult>;
-  public getBlockHeader(indexOrHash: number | string, verbose?: false | 0): Promise<string>;
-  public getBlockHeader(indexOrHash: number | string, verbose: BooleanLikeParam = 0): Promise<string | GetBlockHeaderVerboseResult> {
-    return this.send("getblockheader", [indexOrHash, serializeBooleanLike(verbose)]);
-  }
-
-  public get_block_header(indexOrHash: number | string, verbose: true | 1): Promise<GetBlockHeaderVerboseResult>;
-  public get_block_header(indexOrHash: number | string, verbose?: false | 0): Promise<string>;
-  public get_block_header(options: {
-    block_hash?: H256 | string | null;
-    height?: number | null;
-    verbose?: BooleanLikeParam;
-  }): Promise<string | GetBlockHeaderVerboseResult>;
-  public get_block_header(
-    indexOrHashOrOptions: number | string | { block_hash?: H256 | string | null; height?: number | null; verbose?: BooleanLikeParam },
-    verbose: BooleanLikeParam = true
-  ): Promise<string | GetBlockHeaderVerboseResult> {
-    if (typeof indexOrHashOrOptions === "object" && indexOrHashOrOptions !== null) {
-      const blockHash =
-        indexOrHashOrOptions.block_hash instanceof H256
-          ? indexOrHashOrOptions.block_hash.toString()
-          : indexOrHashOrOptions.block_hash ?? null;
-      const height = indexOrHashOrOptions.height ?? null;
-      const resolvedVerbose = indexOrHashOrOptions.verbose ?? true;
-
-      if (blockHash === null && height === null) {
-        return Promise.reject(new JsonRpcError(RpcCode.InvalidParams, "block_hash and height cannot be both None"));
-      }
-      if (blockHash !== null && height !== null) {
-        return Promise.reject(new JsonRpcError(RpcCode.InvalidParams, "block_hash and height cannot be both set"));
-      }
-
-      return (resolvedVerbose === true || resolvedVerbose === 1)
-        ? this.getBlockHeader(blockHash ?? height!, true)
-        : this.getBlockHeader(blockHash ?? height!, false);
+    const providedLocators = [blockHash, height, indexOrHash].filter((value) => value !== null);
+    if (providedLocators.length === 0) {
+      return Promise.reject(new JsonRpcError(RpcCode.InvalidParams, "indexOrHash, blockHash, or height is required"));
+    }
+    if (providedLocators.length > 1) {
+      return Promise.reject(new JsonRpcError(RpcCode.InvalidParams, "only one block locator may be set"));
     }
 
-    return verbose ? this.getBlockHeader(indexOrHashOrOptions, true) : this.getBlockHeader(indexOrHashOrOptions, false);
+    return this.callWithBooleanArg("getblockheader", blockHash ?? height ?? indexOrHash!, resolvedVerbose);
   }
 
-  public getApplicationLog(hash: H256 | string, trigger?: string): Promise<GetApplicationLogResult> {
-    const params: unknown[] = [serializeHash(hash)];
-    if (trigger !== undefined) {
-      params.push(trigger);
+  public getApplicationLog(input: GetApplicationLogInput): Promise<GetApplicationLogResult> {
+    const params: unknown[] = [serializeHash(input.hash)];
+    if (input.trigger !== undefined) {
+      params.push(input.trigger);
     }
     return this.send("getapplicationlog", params);
   }
 
-  public get_application_log(hash: H256 | string, trigger?: string): Promise<GetApplicationLogResult> {
-    return this.getApplicationLog(hash, trigger);
-  }
-
   public getCandidates(): Promise<GetCandidatesResult> {
-    return this.send("getcandidates");
+    return this.callNoParams("getcandidates");
   }
 
   public getCommittee(): Promise<string[]> {
-    return this.send("getcommittee");
-  }
-
-  public get_committee(): Promise<string[]> {
-    return this.getCommittee();
+    return this.callNoParams("getcommittee");
   }
 
   public getConnectionCount(): Promise<GetConnectionCountResult> {
-    return this.send("getconnectioncount");
+    return this.callNoParams("getconnectioncount");
   }
 
-  public get_connection_count(): Promise<GetConnectionCountResult> {
-    return this.getConnectionCount();
-  }
-
-  public getContractState(scriptHash: H160 | string): Promise<GetContractStateResult> {
-    return this.send("getcontractstate", [serializeHash(scriptHash)]);
-  }
-
-  public get_contract_state(scriptHash: H160 | string): Promise<GetContractStateResult> {
-    return this.getContractState(scriptHash);
+  public getContractState(input: GetContractStateInput): Promise<GetContractStateResult> {
+    return this.callHashParam("getcontractstate", input.scriptHash);
   }
 
   public getNativeContracts(): Promise<GetNativeContractsResult> {
-    return this.send("getnativecontracts");
+    return this.callNoParams("getnativecontracts");
   }
 
-  public get_native_contracts(): Promise<GetNativeContractsResult> {
-    return this.getNativeContracts();
+  public getNep11Balances(input: GetNep11BalancesInput): Promise<GetNep11BalancesResult> {
+    return this.callSingleParam("getnep11balances", input.account);
   }
 
-  public getNep11Balances(account: string): Promise<GetNep11BalancesResult> {
-    return this.send("getnep11balances", [account]);
+  public getNep11Properties(input: GetNep11PropertiesInput): Promise<GetNep11PropertiesResult> {
+    return this.send("getnep11properties", [serializeHash(input.contractHash), input.tokenId]);
   }
 
-  public getNep11Properties(contractHash: H160 | string, tokenId: string): Promise<GetNep11PropertiesResult> {
-    return this.send("getnep11properties", [serializeHash(contractHash), tokenId]);
+  public getNep11Transfers(input: GetNep11TransfersInput): Promise<GetNep11TransfersResult> {
+    return this.callAccountTimeRange("getnep11transfers", input.account, input.startTime, input.endTime);
   }
 
-  public getNep11Transfers(account: string, startTime?: string, endTime?: string): Promise<GetNep11TransfersResult> {
-    const params: unknown[] = [account];
-    if (startTime !== undefined) {
-      params.push(startTime);
-    }
-    if (endTime !== undefined) {
-      params.push(endTime);
-    }
-    return this.send("getnep11transfers", params);
+  public getNep17Balances(input: GetNep17BalancesInput): Promise<GetNep17BalancesResult> {
+    return this.callSingleParam("getnep17balances", input.account);
   }
 
-  public getNep17Balances(account: string): Promise<GetNep17BalancesResult> {
-    return this.send("getnep17balances", [account]);
-  }
-
-  public getNep17Transfers(account: string, startTime?: string, endTime?: string): Promise<GetNep17TransfersResult> {
-    const params: unknown[] = [account];
-    if (startTime !== undefined) {
-      params.push(startTime);
-    }
-    if (endTime !== undefined) {
-      params.push(endTime);
-    }
-    return this.send("getnep17transfers", params);
+  public getNep17Transfers(input: GetNep17TransfersInput): Promise<GetNep17TransfersResult> {
+    return this.callAccountTimeRange("getnep17transfers", input.account, input.startTime, input.endTime);
   }
 
   public getNextBlockValidators(): Promise<GetCandidatesResult> {
-    return this.send("getnextblockvalidators");
+    return this.callNoParams("getnextblockvalidators");
   }
 
   public getPeers(): Promise<GetPeersResult> {
-    return this.send("getpeers");
-  }
-
-  public get_peers(): Promise<GetPeersResult> {
-    return this.getPeers();
+    return this.callNoParams("getpeers");
   }
 
   public getRawMemPool(includeUnverified: true | 1): Promise<GetRawMemPoolVerboseResult>;
   public getRawMemPool(includeUnverified?: false | 0): Promise<string[]>;
   public getRawMemPool(includeUnverified: BooleanLikeParam = 0): Promise<GetRawMemPoolResult> {
-    return this.send("getrawmempool", [serializeBooleanLike(includeUnverified)]);
+    return this.callSingleParam("getrawmempool", includeUnverified);
   }
 
-  public getRawTransaction(hash: H256 | string, verbose: true | 1): Promise<GetRawTransactionResult>;
-  public getRawTransaction(hash: H256 | string, verbose?: false | 0): Promise<string>;
-  public getRawTransaction(hash: H256 | string, verbose: BooleanLikeParam = 0): Promise<string | GetRawTransactionResult> {
-    return this.send("getrawtransaction", [serializeHash(hash), serializeBooleanLike(verbose)]);
+  public getRawTransaction(input: GetRawTransactionInput & { verbose: true | 1 }): Promise<GetRawTransactionResult>;
+  public getRawTransaction(input: GetRawTransactionInput & { verbose?: false | 0 }): Promise<string>;
+  public getRawTransaction(input: GetRawTransactionInput): Promise<string | GetRawTransactionResult> {
+    return this.callWithBooleanArg("getrawtransaction", serializeHash(input.hash), input.verbose ?? 0);
   }
 
   public getStateHeight(): Promise<GetStateHeightResult> {
-    return this.send("getstateheight");
+    return this.callNoParams("getstateheight");
   }
 
-  public getStateRoot(index: number): Promise<GetStateRootResult> {
-    return this.send("getstateroot", [index]);
+  public getStateRoot(input: GetStateRootInput): Promise<GetStateRootResult> {
+    return this.callSingleParam("getstateroot", input.index);
   }
 
-  public getProof(rootHash: H256 | string, contractHash: H160 | string, key: Uint8Array | string): Promise<GetProofResult> {
-    return this.send("getproof", [serializeHash(rootHash), serializeHash(contractHash), encodeStorageKey(key)]);
+  public getProof(input: GetProofInput): Promise<GetProofResult> {
+    return this.send("getproof", [
+      serializeHash(input.rootHash),
+      serializeHash(input.contractHash),
+      encodeStorageKey(input.key),
+    ]);
   }
 
-  public verifyProof(rootHash: H256 | string, proof: Uint8Array | string): Promise<GetProofResult> {
-    return this.send("verifyproof", [serializeHash(rootHash), encodeStorageKey(proof)]);
+  public verifyProof(input: VerifyProofInput): Promise<GetProofResult> {
+    return this.send("verifyproof", [serializeHash(input.rootHash), encodeStorageKey(input.proof)]);
   }
 
-  public getState(rootHash: H256 | string, contractHash: H160 | string, key: Uint8Array | string): Promise<GetStateResult> {
-    return this.send("getstate", [serializeHash(rootHash), serializeHash(contractHash), encodeStorageKey(key)]);
+  public getState(input: GetStateInput): Promise<GetStateResult> {
+    return this.send("getstate", [
+      serializeHash(input.rootHash),
+      serializeHash(input.contractHash),
+      encodeStorageKey(input.key),
+    ]);
   }
 
-  public getStorage(scriptHash: H160 | string, key: Uint8Array | string): Promise<GetStorageResult> {
-    return this.send("getstorage", [serializeHash(scriptHash), encodeStorageKey(key)]);
+  public getStorage(input: GetStorageInput): Promise<GetStorageResult> {
+    return this.callStorageLookup("getstorage", input.scriptHash, input.key);
   }
 
-  public findStorage(scriptHash: H160 | string, prefix: Uint8Array | string, start = 0): Promise<FindStorageResult> {
-    return this.send("findstorage", [serializeHash(scriptHash), encodeStorageKey(prefix), start]);
+  public findStorage(input: FindStorageInput): Promise<FindStorageResult> {
+    return this.send("findstorage", [
+      serializeHash(input.scriptHash),
+      encodeStorageKey(input.prefix),
+      input.start ?? 0,
+    ]);
   }
 
-  public findStates(
-    rootHash: H256 | string,
-    contractHash: H160 | string,
-    prefix: Uint8Array | string,
-    from?: Uint8Array | string,
-    count?: number
-  ): Promise<FindStatesResult> {
+  public findStates(input: FindStatesInput): Promise<FindStatesResult> {
     const params: unknown[] = [
-      serializeHash(rootHash),
-      serializeHash(contractHash),
-      encodeStorageKey(prefix)
+      serializeHash(input.rootHash),
+      serializeHash(input.contractHash),
+      encodeStorageKey(input.prefix),
     ];
 
-    if (from !== undefined || count !== undefined) {
-      params.push(from === undefined ? "" : encodeStorageKey(from));
+    if (input.from !== undefined || input.count !== undefined) {
+      params.push(input.from === undefined ? "" : encodeStorageKey(input.from));
     }
-    if (count !== undefined) {
-      params.push(count);
+    if (input.count !== undefined) {
+      params.push(input.count);
     }
 
     return this.send("findstates", params);
   }
 
-  public getTransactionHeight(hash: H256 | string): Promise<number> {
-    return this.send("gettransactionheight", [serializeHash(hash)]);
+  public getTransactionHeight(input: GetTransactionHeightInput): Promise<number> {
+    return this.callHashParam("gettransactionheight", input.hash);
   }
 
-  public getUnclaimedGas(address: string): Promise<string> {
-    return this.send<GetUnclaimedGasResult>("getunclaimedgas", [address]).then((response) => response.unclaimed);
+  public getUnclaimedGas(input: GetUnclaimedGasInput): Promise<GetUnclaimedGasResult> {
+    return this.callSingleParam("getunclaimedgas", input.address);
   }
 
-  public get_unclaimed_gas(address: string): Promise<GetUnclaimedGasResult> {
-    return this.send("getunclaimedgas", [address]);
-  }
-
-  public getUnspents(address: string): Promise<GetUnspentsResult> {
-    return this.send("getunspents", [address]);
+  public getUnspents(input: GetUnspentsInput): Promise<GetUnspentsResult> {
+    return this.callSingleParam("getunspents", input.address);
   }
 
   public getVersion(): Promise<GetVersionResult> {
-    return this.send("getversion");
+    return this.callNoParams("getversion");
   }
 
-  public get_version(): Promise<GetVersionResult> {
-    return this.getVersion();
-  }
-
-  public openWallet(path: string, password: string): Promise<OpenWalletResult> {
-    return this.send("openwallet", [path, password]);
-  }
-
-  public open_wallet(path: string, password: string): Promise<OpenWalletResult> {
-    return this.openWallet(path, password);
+  public openWallet(input: OpenWalletInput): Promise<OpenWalletResult> {
+    return this.send("openwallet", [input.path, input.password]);
   }
 
   public closeWallet(): Promise<CloseWalletResult> {
-    return this.send("closewallet");
+    return this.callNoParams("closewallet");
   }
 
-  public close_wallet(): Promise<CloseWalletResult> {
-    return this.closeWallet();
-  }
-
-  public dumpPrivKey(address: string): Promise<DumpPrivKeyResult> {
-    return this.send("dumpprivkey", [address]);
-  }
-
-  public dump_priv_key(address: string): Promise<DumpPrivKeyResult> {
-    return this.dumpPrivKey(address);
+  public dumpPrivKey(input: DumpPrivKeyInput): Promise<DumpPrivKeyResult> {
+    return this.callSingleParam("dumpprivkey", input.address);
   }
 
   public getNewAddress(): Promise<GetNewAddressResult> {
-    return this.send("getnewaddress");
+    return this.callNoParams("getnewaddress");
   }
 
-  public get_new_address(): Promise<GetNewAddressResult> {
-    return this.getNewAddress();
-  }
-
-  public getWalletBalance(assetId: H160 | string): Promise<WalletBalanceResult> {
-    return this.send("getwalletbalance", [serializeHash(assetId)]);
-  }
-
-  public get_wallet_balance(assetId: H160 | string): Promise<WalletBalanceResult> {
-    return this.getWalletBalance(assetId);
+  public getWalletBalance(input: GetWalletBalanceInput): Promise<WalletBalanceResult> {
+    return this.callHashParam("getwalletbalance", input.assetId);
   }
 
   public getWalletUnclaimedGas(): Promise<GetWalletUnclaimedGasResult> {
-    return this.send("getwalletunclaimedgas");
+    return this.callNoParams("getwalletunclaimedgas");
   }
 
-  public get_wallet_unclaimed_gas(): Promise<GetWalletUnclaimedGasResult> {
-    return this.getWalletUnclaimedGas();
-  }
-
-  public importPrivKey(wif: string): Promise<ImportPrivKeyResult> {
-    return this.send("importprivkey", [wif]);
-  }
-
-  public import_priv_key(wif: string): Promise<ImportPrivKeyResult> {
-    return this.importPrivKey(wif);
+  public importPrivKey(input: ImportPrivKeyInput): Promise<ImportPrivKeyResult> {
+    return this.callSingleParam("importprivkey", input.wif);
   }
 
   public listAddress(): Promise<ListAddressResult> {
-    return this.send("listaddress");
+    return this.callNoParams("listaddress");
   }
 
-  public list_address(): Promise<ListAddressResult> {
-    return this.listAddress();
-  }
-
-  public invokeFunction(
-    contractHash: H160 | string,
-    method: string,
-    args: InvokeParameters | Array<InvokeParameterJson | ContractParamLikeJson | Record<string, unknown>> = [],
-    signers: Array<Signer | SignerJson | Record<string, unknown>> = []
-  ): Promise<InvokeResult> {
-    const serializedArgs = Array.isArray(args) ? serializeInvokeArgs(args) : args.toJSON();
+  public invokeFunction(input: InvokeFunctionInput): Promise<InvokeResult> {
+    const serializedArgs = this.serializeInvokeInput(input.args);
     return this.send("invokefunction", [
-      serializeHash(contractHash),
-      method,
+      serializeHash(input.contractHash),
+      input.method,
       serializedArgs,
-      serializeSigners(signers)
+      this.serializeSignerInput(input.signers),
     ]);
   }
 
-  public invoke_function(
-    contractHash: H160 | string,
-    method: string,
-    args: InvokeParameters | Array<InvokeParameterJson | ContractParamLikeJson | Record<string, unknown>> = [],
-    signers: Array<Signer | SignerJson | Record<string, unknown>> = []
-  ): Promise<InvokeResult> {
-    return this.invokeFunction(contractHash, method, args, signers);
-  }
-
-  public invokeContractVerify(
-    contractHash: H160 | string,
-    args: InvokeParameters | Array<InvokeParameterJson | ContractParamLikeJson | Record<string, unknown>> = [],
-    signers: Array<Signer | SignerJson | Record<string, unknown>> = []
-  ): Promise<InvokeContractVerifyResult> {
-    const serializedArgs = Array.isArray(args) ? serializeInvokeArgs(args) : args.toJSON();
+  public invokeContractVerify(input: InvokeContractVerifyInput): Promise<InvokeContractVerifyResult> {
+    const serializedArgs = this.serializeInvokeInput(input.args);
     return this.send("invokecontractverify", [
-      serializeHash(contractHash),
+      serializeHash(input.contractHash),
       serializedArgs,
-      serializeSigners(signers)
+      this.serializeSignerInput(input.signers),
     ]);
   }
 
-  public invoke_contract_verify(
-    contractHash: H160 | string,
-    args: InvokeParameters | Array<InvokeParameterJson | ContractParamLikeJson | Record<string, unknown>> = [],
-    signers: Array<Signer | SignerJson | Record<string, unknown>> = []
-  ): Promise<InvokeContractVerifyResult> {
-    return this.invokeContractVerify(contractHash, args, signers);
+  public invokeScript(input: InvokeScriptInput): Promise<InvokeResult> {
+    return this.send("invokescript", [encodeBinary(input.script), this.serializeSignerInput(input.signers)]);
   }
 
-  public invokeScript(script: Uint8Array | string | Base64Encodable, signers: Array<Signer | SignerJson | Record<string, unknown>> = []): Promise<InvokeResult> {
-    return this.send("invokescript", [encodeBinary(script), serializeSigners(signers)]);
+  public traverseIterator(input: TraverseIteratorInput): Promise<TraverseIteratorResult> {
+    return this.send("traverseiterator", [input.sessionId, input.iteratorId, input.count]);
   }
 
-  public invoke_script(script: Uint8Array | string | Base64Encodable, signers: Array<Signer | SignerJson | Record<string, unknown>> = []): Promise<InvokeResult> {
-    return this.invokeScript(script, signers);
-  }
-
-  public traverseIterator(sessionId: string, iteratorId: string, count: number): Promise<TraverseIteratorResult> {
-    return this.send("traverseiterator", [sessionId, iteratorId, count]);
-  }
-
-  public traverse_iterator(sessionId: string, iteratorId: string, count: number): Promise<TraverseIteratorResult> {
-    return this.traverseIterator(sessionId, iteratorId, count);
-  }
-
-  public terminateSession(sessionId: string): Promise<TerminateSessionResult> {
-    return this.send("terminatesession", [sessionId]);
+  public terminateSession(input: { sessionId: string }): Promise<TerminateSessionResult> {
+    return this.callSingleParam("terminatesession", input.sessionId);
   }
 
   public listPlugins(): Promise<ListPluginsResult> {
-    return this.send("listplugins");
+    return this.callNoParams("listplugins");
   }
 
-  public list_plugins(): Promise<ListPluginsResult> {
-    return this.listPlugins();
+  public sendRawTransaction(input: SendRawTransactionInput): Promise<SendRawTransactionResult> {
+    return this.callEncodedPayload("sendrawtransaction", input.tx);
   }
 
-  public sendRawTransaction(tx: Tx | Uint8Array | string | Base64Encodable): Promise<string> {
-    return this.send<SendRawTransactionResult>("sendrawtransaction", [encodeBinary(tx)]).then((response) => response.hash);
-  }
-
-  public send_raw_transaction(tx: Tx | Uint8Array | string | Base64Encodable): Promise<SendRawTransactionResult> {
-    return this.send("sendrawtransaction", [encodeBinary(tx)]);
-  }
-
-  public sendTx(tx: Tx | Uint8Array | string | Base64Encodable): Promise<string> {
-    return this.send<SendRawTransactionResult>("sendrawtransaction", [encodeBinary(tx)]).then((response) => response.hash);
-  }
-
-  public send_tx(tx: Tx | Uint8Array | string | Base64Encodable): Promise<SendRawTransactionResult> {
-    return this.send("sendrawtransaction", [encodeBinary(tx)]);
-  }
-
-  public sendFrom(
-    assetId: H160 | string,
-    from: string,
-    to: string,
-    amount: bigint | number | string,
-    signers: Array<H160 | string> = []
-  ): Promise<RelayTransactionResult> {
+  public sendFrom(input: SendFromInput): Promise<RelayTransactionResult> {
     const params: unknown[] = [
-      serializeTransferAsset(assetId),
-      from,
-      to,
-      serializeTransferValue(amount)
+      serializeHash(input.assetId),
+      input.from,
+      input.to,
+      serializeTransferValue(input.amount),
     ];
 
+    const signers = (input.signers ?? []).map((signer) => serializeHash(signer));
     if (signers.length > 0) {
-      params.push(signers.map((signer) => serializeHash(signer)));
+      params.push(signers);
     }
 
     return this.send("sendfrom", params);
   }
 
-  public send_from(
-    assetId: H160 | string,
-    from: string,
-    to: string,
-    amount: bigint | number | string,
-    signers: Array<H160 | string> = []
-  ): Promise<RelayTransactionResult> {
-    return this.sendFrom(assetId, from, to, amount, signers);
-  }
-
-  public sendMany(
-    transfers: Array<{ asset: H160 | string; value: bigint | number | string; address: string }>,
-    from?: string,
-    signers: Array<H160 | string> = []
-  ): Promise<RelayTransactionResult> {
-    const serializedTransfers = transfers.map((transfer) => ({
-      asset: serializeTransferAsset(transfer.asset),
+  public sendMany(input: SendManyInput): Promise<RelayTransactionResult> {
+    const serializedTransfers = input.transfers.map((transfer) => ({
+      asset: serializeHash(transfer.asset),
       value: serializeTransferValue(transfer.value),
-      address: transfer.address
+      address: transfer.address,
     }));
 
     const params: unknown[] = [];
-    if (from !== undefined) {
-      params.push(from);
+    if (input.from !== undefined) {
+      params.push(input.from);
     }
     params.push(serializedTransfers);
+    const signers = (input.signers ?? []).map((signer) => serializeHash(signer));
     if (signers.length > 0) {
-      params.push(signers.map((signer) => serializeHash(signer)));
+      params.push(signers);
     }
 
     return this.send("sendmany", params);
   }
 
-  public send_many(
-    transfers: Array<{ asset: H160 | string; value: bigint | number | string; address: string }>,
-    from?: string,
-    signers: Array<H160 | string> = []
-  ): Promise<RelayTransactionResult> {
-    return this.sendMany(transfers, from, signers);
+  public sendToAddress(input: SendToAddressInput): Promise<RelayTransactionResult> {
+    return this.send("sendtoaddress", [serializeHash(input.assetId), input.to, serializeTransferValue(input.amount)]);
   }
 
-  public sendToAddress(
-    assetId: H160 | string,
-    to: string,
-    amount: bigint | number | string
-  ): Promise<RelayTransactionResult> {
-    return this.send("sendtoaddress", [
-      serializeTransferAsset(assetId),
-      to,
-      serializeTransferValue(amount)
-    ]);
+  public submitBlock(input: SubmitBlockInput): Promise<SubmitBlockResult> {
+    return this.callEncodedPayload("submitblock", input.block);
   }
 
-  public send_to_address(
-    assetId: H160 | string,
-    to: string,
-    amount: bigint | number | string
-  ): Promise<RelayTransactionResult> {
-    return this.sendToAddress(assetId, to, amount);
+  public validateAddress(input: ValidateAddressInput): Promise<ValidateAddressResult> {
+    return this.callSingleParam("validateaddress", input.address);
   }
 
-  public submitBlock(block: Uint8Array | string | Base64Encodable): Promise<string> {
-    return this.send<SubmitBlockResult>("submitblock", [encodeBinary(block)]).then((response) => response.hash);
-  }
-
-  public submit_block(block: Uint8Array | string | Base64Encodable): Promise<SubmitBlockResult> {
-    return this.send("submitblock", [encodeBinary(block)]);
-  }
-
-  public validateAddress(address: string): Promise<boolean> {
-    return this.send<ValidateAddressResult>("validateaddress", [address]).then((response) => response.isvalid);
-  }
-
-  public validate_address(address: string): Promise<ValidateAddressResult> {
-    return this.send("validateaddress", [address]);
-  }
-
-  public cancelTx(txHash: H256 | string, signers: Array<H160 | string> = [], extraFee: bigint | number = 0): Promise<CancelTransactionResult> {
-    return this.send("canceltx", [
-      serializeHash(txHash),
-      signers.map((signer) => serializeHash(signer)),
-      BigInt(extraFee).toString()
-    ]);
-  }
-
-  public cancel_tx(txHash: H256 | string, signers: Array<H160 | string> = [], extraFee: bigint | number = 0): Promise<CancelTransactionResult> {
-    return this.cancelTx(txHash, signers, extraFee);
-  }
-
-  public cancelTransaction(
-    txHash: H256 | string,
-    signers: Array<H160 | string> = [],
-    extraFee?: bigint | number | string
-  ): Promise<CancelTransactionResult> {
+  public cancelTransaction(input: CancelTransactionInput): Promise<CancelTransactionResult> {
     const params: unknown[] = [
-      serializeHash(txHash),
-      signers.map((signer) => serializeHash(signer))
+      serializeHash(input.txHash),
+      (input.signers ?? []).map((signer) => serializeHash(signer)),
     ];
-    if (extraFee !== undefined) {
-      params.push(typeof extraFee === "string" ? extraFee : BigInt(extraFee).toString());
+    if (input.extraFee !== undefined) {
+      params.push(typeof input.extraFee === "string" ? input.extraFee : BigInt(input.extraFee).toString());
     }
     return this.send("canceltransaction", params);
   }
 
-  public calculateNetworkFee(tx: Tx | Uint8Array | string | Base64Encodable): Promise<string> {
-    return this.send<NetworkFeeResult>("calculatenetworkfee", [encodeBinary(tx)]).then((response) => response.networkfee);
+  public calculateNetworkFee(input: CalculateNetworkFeeInput): Promise<NetworkFeeResult> {
+    return this.callEncodedPayload("calculatenetworkfee", input.tx);
   }
 }
 

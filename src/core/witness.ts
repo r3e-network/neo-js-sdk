@@ -2,17 +2,16 @@ import { bytesToBase64, equalBytes } from "../internal/bytes.js";
 import { BinaryReader, BinaryWriter } from "./serializing.js";
 
 export enum WitnessScope {
-  NONE = 0x00,
   None = 0x00,
   CalledByEntry = 0x01,
   CustomContracts = 0x10,
   CustomGroups = 0x20,
   WitnessRules = 0x40,
-  Global = 0x80
+  Global = 0x80,
 }
 
 export function witnessScopeName(scope: WitnessScope): string {
-  if (scope === WitnessScope.NONE) {
+  if (scope === WitnessScope.None) {
     return "None";
   }
   const flags: string[] = [];
@@ -37,7 +36,7 @@ export function witnessScopeName(scope: WitnessScope): string {
 export class Witness {
   public constructor(
     public invocation: Uint8Array,
-    public verification: Uint8Array
+    public verification: Uint8Array,
   ) {}
 
   public get invocationScript(): Uint8Array {
@@ -60,12 +59,8 @@ export class Witness {
   public toJSON(): { invocation: string; verification: string } {
     return {
       invocation: bytesToBase64(this.invocation),
-      verification: bytesToBase64(this.verification)
+      verification: bytesToBase64(this.verification),
     };
-  }
-
-  public to_json(): { invocation: string; verification: string } {
-    return this.toJSON();
   }
 
   public equals(other: Witness): boolean {

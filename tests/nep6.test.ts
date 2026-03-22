@@ -21,7 +21,7 @@ afterEach(async () => {
 describe("NEP-6 wallet", () => {
   it("creates, writes, opens, and decrypts an account", async () => {
     const wallet = new Wallet({ name: "test", passphrase: "test" });
-    const account = await wallet.createAccount();
+    const account = wallet.createAccount();
 
     expect(wallet.accounts).toHaveLength(1);
     expect(account.signable()).toBe(true);
@@ -30,7 +30,7 @@ describe("NEP-6 wallet", () => {
     cleanupPaths.push(dir);
     const path = join(dir, "test-wallet.json");
 
-    await wallet.writeToFile(path);
+    wallet.writeToFile(path);
 
     const file = JSON.parse(await readFile(path, "utf8")) as {
       name: string;
@@ -40,17 +40,17 @@ describe("NEP-6 wallet", () => {
     expect(file.name).toBe("test");
     expect(file.accounts).toHaveLength(1);
 
-    const reopened = await Wallet.openNep6Wallet(path);
+    const reopened = Wallet.openNep6Wallet(path);
     expect(reopened.accounts).toHaveLength(1);
 
-    await reopened.decrypt("test");
+    reopened.decrypt("test");
     expect(reopened.accounts[0].signable()).toBe(true);
     expect(reopened.accounts[0].getScriptHash().equals(account.getScriptHash())).toBe(true);
   });
 
-  it("matches the Python SDK's synchronous wallet API shape", async () => {
+  it("keeps wallet operations on the canonical js method names", async () => {
     const wallet = new Wallet({ name: "sync", passphrase: "secret" });
-    const account = wallet.create_account();
+    const account = wallet.createAccount();
 
     expect(account).toBeInstanceOf(Account);
     expect(wallet.accounts).toHaveLength(1);
@@ -59,21 +59,24 @@ describe("NEP-6 wallet", () => {
     cleanupPaths.push(dir);
     const path = join(dir, "wallet.json");
 
-    wallet.write_to_file(path);
-    const reopened = Wallet.open_nep6_wallet(path);
+    wallet.writeToFile(path);
+    const reopened = Wallet.openNep6Wallet(path);
     reopened.decrypt("secret");
 
     expect(reopened.accounts[0].signable()).toBe(true);
+    expect("create_account" in wallet).toBe(false);
+    expect("write_to_file" in wallet).toBe(false);
+    expect("open_nep6_wallet" in Wallet).toBe(false);
   });
 
-  it("keeps NEP-6 JSON serialization/deserialization strict like the Python SDK", async () => {
+  it("keeps NEP-6 JSON serialization/deserialization strict", async () => {
     const watchOnly = new Account({
       address: "NbTiM6h8r99kpRtb428XcsUk1TzKed2gTc",
       key: "6PYUUUFei9PBBfVkSn8q7hFCnewWFRBKPxcn6Kz6Bmk3FqWyLyuTQE2XFH",
       contract: null
     });
 
-    expect(() => watchOnly.to_json()).toThrow();
+    expect(() => watchOnly.toJSON()).toThrow();
 
     const dir = await mkdtemp(join(tmpdir(), "neo-js-sdk-null-contract-"));
     cleanupPaths.push(dir);
@@ -98,6 +101,7 @@ describe("NEP-6 wallet", () => {
       "utf8"
     );
 
-    expect(() => Wallet.open_nep6_wallet(path)).toThrow();
+    expect(() => Wallet.openNep6Wallet(path)).toThrow();
+    expect("to_json" in watchOnly).toBe(false);
   });
 });

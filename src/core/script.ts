@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { bytesToHex, concatBytes, hexToBytes, reverseBytes, toUint8Array, utf8ToBytes } from "../internal/bytes.js";
+import { bytesToHex, concatBytes, toUint8Array, utf8ToBytes } from "../internal/bytes.js";
 import { H160, H256 } from "./hash.js";
 import { serialize } from "./serializing.js";
 import { PublicKey } from "./keypair.js";
@@ -19,10 +19,6 @@ export enum CallFlags {
 export function syscallCode(syscallName: string): number {
   const hash = createHash("sha256").update(syscallName).digest();
   return hash.readUInt32LE(0);
-}
-
-export function syscall_code(syscallName: string): number {
-  return syscallCode(syscallName);
 }
 
 function bigintToFixedLE(value: bigint): Uint8Array {
@@ -84,10 +80,6 @@ export class ScriptBuilder {
       return this.emitPushBytes(serialize(item as { marshalTo(writer: never): void }));
     }
     throw new Error(`Unsupported push item: ${String(item)}`);
-  }
-
-  public emit_push(item: unknown): this {
-    return this.emitPush(item);
   }
 
   private emitPushInt(value: bigint): this {
@@ -166,15 +158,6 @@ export class ScriptBuilder {
     return this.emitSyscall("System.Contract.Call");
   }
 
-  public emit_contract_call(
-    contractHash: H160 | string,
-    method: string,
-    callFlags: CallFlags = CallFlags.NONE,
-    args: unknown[] = []
-  ): this {
-    return this.emitContractCall(contractHash, method, callFlags, args);
-  }
-
   public emitSyscall(syscall: number | string, args: unknown[] = []): this {
     for (const arg of [...args].reverse()) {
       this.emitPush(arg);
@@ -185,16 +168,8 @@ export class ScriptBuilder {
     return this;
   }
 
-  public emit_syscall(syscall: number | string, args: unknown[] = []): this {
-    return this.emitSyscall(syscall, args);
-  }
-
   public toBytes(): Uint8Array {
     return Uint8Array.from(this.script);
-  }
-
-  public to_bytes(): Uint8Array {
-    return this.toBytes();
   }
 
   public toHex(): string {

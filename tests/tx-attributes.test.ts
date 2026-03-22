@@ -24,7 +24,8 @@ describe("transaction attributes", () => {
 
     for (const attribute of attributes) {
       const decoded = deserialize(serialize(attribute), TxAttribute);
-      expect(decoded.to_json()).toEqual(attribute.to_json());
+      expect(decoded.toJSON()).toEqual(attribute.toJSON());
+      expect("to_json" in decoded).toBe(false);
     }
   });
 });

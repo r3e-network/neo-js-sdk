@@ -1,5 +1,5 @@
-import { BinaryReader, BinaryWriter } from "./serializing.js";
 import { BytesLike, bytesToHex, equalBytes, hexToBytes, reverseBytes, toUint8Array } from "../internal/bytes.js";
+import { BinaryReader, BinaryWriter } from "./serializing.js";
 
 abstract class HashBase {
   protected constructor(
@@ -13,10 +13,6 @@ abstract class HashBase {
 
   public toBytes(): Uint8Array {
     return this.data.slice();
-  }
-
-  public to_bytes(): Uint8Array {
-    return this.toBytes();
   }
 
   public marshalTo(writer: BinaryWriter): void {

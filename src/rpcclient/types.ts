@@ -1,6 +1,6 @@
 import type { H160, H256 } from "../core/hash.js";
 import type { PublicKey } from "../core/keypair.js";
-import type { Signer, Tx, SignerJson, TxAttributeJson } from "../core/tx.js";
+import type { Signer, SignerJson, Tx, TxAttributeJson } from "../core/tx.js";
 import type { WitnessRuleJson } from "../core/witness-rule.js";
 
 export interface JsonRpcRequest {
@@ -62,7 +62,214 @@ export interface Base64Encodable {
 }
 
 export interface ContractParamLikeJson {
-  toJson(): InvokeParameterJson;
+  toJSON?(): InvokeParameterJson;
+  toJson?(): InvokeParameterJson;
+}
+
+export interface InvokeParametersLike {
+  toJSON(): InvokeParameterJson[];
+}
+
+export type RpcBinaryPayload = Tx | Uint8Array | string | Base64Encodable;
+export type RpcInvokeArgsInput =
+  | InvokeParametersLike
+  | Array<InvokeParameterJson | ContractParamLikeJson | Record<string, unknown>>;
+export type RpcSignerInput = Array<Signer | SignerJson | Record<string, unknown>>;
+
+export interface GetBlockInput {
+  indexOrHash: number | string;
+  verbose?: BooleanLikeParam;
+}
+
+export interface GetBlockHashInput {
+  blockIndex: number;
+}
+
+export interface GetBlockHeaderInput {
+  indexOrHash?: number | string;
+  blockHash?: H256 | string | null;
+  height?: number | null;
+  verbose?: BooleanLikeParam;
+}
+
+export interface GetApplicationLogInput {
+  hash: H256 | string;
+  trigger?: string;
+}
+
+export interface GetContractStateInput {
+  scriptHash: H160 | string;
+}
+
+export interface GetNep11BalancesInput {
+  account: string;
+}
+
+export interface GetNep11PropertiesInput {
+  contractHash: H160 | string;
+  tokenId: string;
+}
+
+export interface GetNep11TransfersInput {
+  account: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface GetNep17TransfersInput {
+  account: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface GetNep17BalancesInput {
+  account: string;
+}
+
+export interface GetRawTransactionInput {
+  hash: H256 | string;
+  verbose?: BooleanLikeParam;
+}
+
+export interface GetStateRootInput {
+  index: number;
+}
+
+export interface GetProofInput {
+  rootHash: H256 | string;
+  contractHash: H160 | string;
+  key: Uint8Array | string;
+}
+
+export interface VerifyProofInput {
+  rootHash: H256 | string;
+  proof: Uint8Array | string;
+}
+
+export interface GetStateInput {
+  rootHash: H256 | string;
+  contractHash: H160 | string;
+  key: Uint8Array | string;
+}
+
+export interface GetStorageInput {
+  scriptHash: H160 | string;
+  key: Uint8Array | string;
+}
+
+export interface FindStorageInput {
+  scriptHash: H160 | string;
+  prefix: Uint8Array | string;
+  start?: number;
+}
+
+export interface FindStatesInput {
+  rootHash: H256 | string;
+  contractHash: H160 | string;
+  prefix: Uint8Array | string;
+  from?: Uint8Array | string;
+  count?: number;
+}
+
+export interface GetUnclaimedGasInput {
+  address: string;
+}
+
+export interface GetTransactionHeightInput {
+  hash: H256 | string;
+}
+
+export interface GetUnspentsInput {
+  address: string;
+}
+
+export interface OpenWalletInput {
+  path: string;
+  password: string;
+}
+
+export interface DumpPrivKeyInput {
+  address: string;
+}
+
+export interface GetWalletBalanceInput {
+  assetId: H160 | string;
+}
+
+export interface ImportPrivKeyInput {
+  wif: string;
+}
+
+export interface InvokeFunctionInput {
+  contractHash: H160 | string;
+  method: string;
+  args?: RpcInvokeArgsInput;
+  signers?: RpcSignerInput;
+}
+
+export interface InvokeContractVerifyInput {
+  contractHash: H160 | string;
+  args?: RpcInvokeArgsInput;
+  signers?: RpcSignerInput;
+}
+
+export interface InvokeScriptInput {
+  script: RpcBinaryPayload;
+  signers?: RpcSignerInput;
+}
+
+export interface TraverseIteratorInput {
+  sessionId: string;
+  iteratorId: string;
+  count: number;
+}
+
+export interface SendRawTransactionInput {
+  tx: RpcBinaryPayload;
+}
+
+export interface SendManyTransferInput {
+  asset: H160 | string;
+  value: bigint | number | string;
+  address: string;
+}
+
+export interface SendFromInput {
+  assetId: H160 | string;
+  from: string;
+  to: string;
+  amount: bigint | number | string;
+  signers?: Array<H160 | string>;
+}
+
+export interface SendManyInput {
+  transfers: SendManyTransferInput[];
+  from?: string;
+  signers?: Array<H160 | string>;
+}
+
+export interface SendToAddressInput {
+  assetId: H160 | string;
+  to: string;
+  amount: bigint | number | string;
+}
+
+export interface SubmitBlockInput {
+  block: RpcBinaryPayload;
+}
+
+export interface ValidateAddressInput {
+  address: string;
+}
+
+export interface CancelTransactionInput {
+  txHash: H256 | string;
+  signers?: Array<H160 | string>;
+  extraFee?: bigint | number | string;
+}
+
+export interface CalculateNetworkFeeInput {
+  tx: RpcBinaryPayload;
 }
 
 export type GetBlockHeaderCountResult = number;
@@ -266,16 +473,16 @@ export interface GetContractStateResult {
 export type GetNativeContractsResult = GetContractStateResult[];
 
 export interface Nep11TokenBalance {
-  tokenid: string;
+  id: string;
   amount: string;
   lastupdatedblock: number;
 }
 
 export interface Nep11Balance {
   assethash: string;
-  name?: string;
-  symbol?: string;
-  decimals?: string | number;
+  name: string;
+  symbol: string;
+  decimals: string;
   tokens: Nep11TokenBalance[];
 }
 
@@ -290,7 +497,7 @@ export type GetNep11PropertiesResult = Record<string, GetNep11PropertyValueResul
 export interface Nep11TransferEvent {
   timestamp: number;
   assethash: string;
-  transferaddress: string | null;
+  transferaddress: string;
   amount: string;
   blockindex: number;
   transfernotifyindex: number;
@@ -299,9 +506,9 @@ export interface Nep11TransferEvent {
 }
 
 export interface GetNep11TransfersResult {
-  address: string;
   sent: Nep11TransferEvent[];
   received: Nep11TransferEvent[];
+  address: string;
 }
 
 export interface Nep17Balance {
@@ -318,7 +525,7 @@ export interface GetNep17BalancesResult {
 export interface Nep17TransferEvent {
   timestamp: number;
   assethash: string;
-  transferaddress: string | null;
+  transferaddress: string;
   amount: string;
   blockindex: number;
   transfernotifyindex: number;
@@ -326,15 +533,15 @@ export interface Nep17TransferEvent {
 }
 
 export interface GetNep17TransfersResult {
-  address: string;
   sent: Nep17TransferEvent[];
   received: Nep17TransferEvent[];
+  address: string;
 }
 
 export interface RpcValidatorResult {
   publickey: string;
-  votes: string | number;
-  active?: boolean;
+  votes: string;
+  active: boolean;
 }
 
 export type GetCandidatesResult = RpcValidatorResult[];
@@ -361,8 +568,7 @@ export interface GetVersionProtocolResult {
   memorypoolmaxtransactions: number;
   initialgasdistribution: number;
   hardforks?: GetVersionHardforkResult[];
-  standbycommittee?: string[];
-  seedlist?: string[];
+  committeehistory?: Record<string, number>;
 }
 
 export interface GetVersionHardforkResult {
@@ -380,15 +586,14 @@ export interface GetVersionResult {
 }
 
 export interface GetVersionRpcSettingsResult {
-  maxiteratorresultitems: number;
-  sessionenabled: boolean;
+  maxiteratorresultitems?: number;
+  sessionenabled?: boolean;
 }
 
 export interface RpcPlugin {
   name: string;
   version: string;
   interfaces: string[];
-  category?: string;
 }
 
 export type ListPluginsResult = RpcPlugin[];
@@ -407,7 +612,7 @@ export interface GetStateRootResult {
   version: number;
   index: number;
   roothash: string;
-  witnesses?: RpcWitnessJson[];
+  witnesses: RpcWitnessJson[];
 }
 
 export interface RpcSignerJson {
@@ -419,7 +624,7 @@ export interface RpcSignerJson {
 }
 
 export interface GetRawTransactionResult {
-  hash: string;
+  txid: string;
   size: number;
   version: number;
   nonce: number;
@@ -427,15 +632,14 @@ export interface GetRawTransactionResult {
   sysfee: string;
   netfee: string;
   validuntilblock: number;
-  attributes: TxAttributeJson[];
   signers: RpcSignerJson[];
+  attributes: TxAttributeJson[];
   script: string;
   witnesses: RpcWitnessJson[];
-  confirmations: number;
-  blockhash: string;
-  blocktime: number;
+  blockhash?: string;
+  confirmations?: number;
+  blocktime?: number;
   vmstate?: string;
-  vm_state?: string;
 }
 
 export interface GetRawMemPoolVerboseResult {
@@ -447,8 +651,8 @@ export interface GetRawMemPoolVerboseResult {
 export type GetRawMemPoolResult = string[] | GetRawMemPoolVerboseResult;
 
 export interface GetStateHeightResult {
-  localrootindex?: number | null;
-  validatedrootindex?: number | null;
+  localrootindex: number;
+  validatedrootindex: number;
 }
 
 export type GetProofResult = string;
@@ -469,9 +673,10 @@ export interface FindStorageResult {
 
 export interface FindStatesResult {
   truncated: boolean;
-  results: FindStorageEntry[];
-  firstProof?: string;
-  lastProof?: string;
+  results: Array<{
+    key: string;
+    value: string;
+  }>;
 }
 
 export interface GetUnclaimedGasResult {
@@ -482,15 +687,14 @@ export interface GetUnclaimedGasResult {
 export interface UnspentTransaction {
   txid: string;
   n: number;
-  value: number | string;
+  value: string;
 }
 
 export interface UnspentBalance {
+  asset_hash: string;
+  asset: string;
+  amount: string;
   unspent: UnspentTransaction[];
-  assethash: string;
-  asset?: string;
-  asset_symbol?: string;
-  amount: number | string;
 }
 
 export interface GetUnspentsResult {
@@ -502,43 +706,44 @@ export interface InvokeResult<TStackItem = RpcStackItemJson> {
   script: string;
   state: string;
   gasconsumed: string;
-  exception?: string | null;
   stack: TStackItem[];
-  tx?: string;
-  notifications?: RpcNotification[];
+  exception?: string | null;
   session?: string;
+  notifications?: RpcNotification[];
   diagnostics?: InvokeDiagnosticsResult;
-  pendingsignature?: PendingSignatureResult;
+  tx?: string;
+  pending_signature?: PendingSignatureResult;
 }
 
 export interface InvokeDiagnosticsInvocationTree {
-  hash: string;
-  call?: InvokeDiagnosticsInvocationTree[];
+  current: RpcNotification;
+  calls?: InvokeDiagnosticsInvocationTree[];
 }
 
 export interface InvokeDiagnosticsStorageChange {
   state: string;
   key: string;
-  value: string;
+  value?: string;
 }
 
 export interface InvokeDiagnosticsResult {
-  invokedcontracts: InvokeDiagnosticsInvocationTree;
-  storagechanges: InvokeDiagnosticsStorageChange[];
+  invocations?: InvokeDiagnosticsInvocationTree[];
+  storagechanges?: InvokeDiagnosticsStorageChange[];
 }
 
 export interface PendingSignatureContextItem {
-  script: string | null;
-  parameters: InvokeParameterJson[];
-  signatures: Record<string, string>;
+  account: string;
+  scopes: string;
+  allowedcontracts: string[];
+  allowedgroups: string[];
+  rules: WitnessRuleJson[];
+  signatures: string[];
 }
 
 export interface PendingSignatureResult {
   type: string;
-  hash: string;
-  data: string;
-  items: Record<string, PendingSignatureContextItem>;
-  network: number;
+  hex: string;
+  items: PendingSignatureContextItem[];
 }
 
 export type InvokeContractVerifyResult<TStackItem = RpcStackItemJson> = InvokeResult<TStackItem>;
@@ -549,6 +754,7 @@ export interface SendRawTransactionResult {
 
 export interface WalletBalanceResult {
   balance: string;
+  confirmed: string;
 }
 
 export type OpenWalletResult = boolean;
@@ -560,7 +766,7 @@ export type GetWalletUnclaimedGasResult = string;
 export interface RpcAccountResult {
   address: string;
   haskey: boolean;
-  label: string | null;
+  label?: string;
   watchonly: boolean;
 }
 
@@ -572,21 +778,11 @@ export type TerminateSessionResult = boolean;
 
 export interface RelayTransactionResult {
   hash: string;
-  size: number;
-  version: number;
-  nonce: number;
-  sender: string;
-  sysfee: string;
-  netfee: string;
-  validuntilblock: number;
-  attributes: TxAttributeJson[];
-  signers: RpcSignerJson[];
-  script: string;
-  witnesses: RpcWitnessJson[];
 }
 
 export type CancelTransactionResult = RelayTransactionResult;
 export type SubmitBlockResult = SendRawTransactionResult;
+
 export interface NetworkFeeResult {
   networkfee: string;
 }
@@ -596,10 +792,11 @@ export interface SignerLikeJson {
 }
 
 export type InvokeSerializable =
+  | InvokeParameterJson
+  | ContractParamLikeJson
+  | Signer
+  | SignerJson
+  | SignerLikeJson
   | H160
   | H256
-  | PublicKey
-  | Tx
-  | Signer
-  | Uint8Array
-  | string;
+  | PublicKey;

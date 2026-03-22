@@ -58,3 +58,12 @@ export function equalBytes(a: BytesLike, b: BytesLike): boolean {
 export function utf8ToBytes(value: string): Uint8Array {
   return new TextEncoder().encode(value);
 }
+
+export function encodeUInt32LE(value: number): Uint8Array {
+  const out = new Uint8Array(4);
+  out[0] = value & 0xff;
+  out[1] = (value >> 8) & 0xff;
+  out[2] = (value >> 16) & 0xff;
+  out[3] = (value >> 24) & 0xff;
+  return out;
+}

@@ -119,10 +119,6 @@ export abstract class WitnessCondition {
   public toJSON(): WitnessConditionJson {
     return { type: WitnessConditionType[this.type] as WitnessConditionJson["type"] } as WitnessConditionJson;
   }
-
-  public to_json(): WitnessConditionJson {
-    return this.toJSON();
-  }
 }
 
 export class BooleanCondition extends WitnessCondition {
@@ -137,10 +133,6 @@ export class BooleanCondition extends WitnessCondition {
 
   public override toJSON(): BooleanConditionJson {
     return { type: "Boolean", expression: this.expression };
-  }
-
-  public override to_json(): BooleanConditionJson {
-    return this.toJSON();
   }
 }
 
@@ -157,10 +149,6 @@ export class NotCondition extends WitnessCondition {
   public override toJSON(): NotConditionJson {
     return { type: "Not", expression: this.expression.toJSON() };
   }
-
-  public override to_json(): NotConditionJson {
-    return this.toJSON();
-  }
 }
 
 export class AndCondition extends WitnessCondition {
@@ -175,10 +163,6 @@ export class AndCondition extends WitnessCondition {
 
   public override toJSON(): AndConditionJson {
     return { type: "And", expressions: this.expressions.map((expression) => expression.toJSON()) };
-  }
-
-  public override to_json(): AndConditionJson {
-    return this.toJSON();
   }
 }
 
@@ -195,10 +179,6 @@ export class OrCondition extends WitnessCondition {
   public override toJSON(): OrConditionJson {
     return { type: "Or", expressions: this.expressions.map((expression) => expression.toJSON()) };
   }
-
-  public override to_json(): OrConditionJson {
-    return this.toJSON();
-  }
 }
 
 export class ScriptHashCondition extends WitnessCondition {
@@ -213,10 +193,6 @@ export class ScriptHashCondition extends WitnessCondition {
 
   public override toJSON(): ScriptHashConditionJson {
     return { type: "ScriptHash", hash: this.hash.toString() };
-  }
-
-  public override to_json(): ScriptHashConditionJson {
-    return this.toJSON();
   }
 }
 
@@ -233,10 +209,6 @@ export class GroupCondition extends WitnessCondition {
   public override toJSON(): GroupConditionJson {
     return { type: "Group", group: this.group.toString() };
   }
-
-  public override to_json(): GroupConditionJson {
-    return this.toJSON();
-  }
 }
 
 export class CalledByEntryCondition extends WitnessCondition {
@@ -246,10 +218,6 @@ export class CalledByEntryCondition extends WitnessCondition {
 
   public override toJSON(): CalledByEntryConditionJson {
     return { type: "CalledByEntry" };
-  }
-
-  public override to_json(): CalledByEntryConditionJson {
-    return this.toJSON();
   }
 }
 
@@ -266,10 +234,6 @@ export class CalledByContractCondition extends WitnessCondition {
   public override toJSON(): CalledByContractConditionJson {
     return { type: "CalledByContract", hash: this.hash.toString() };
   }
-
-  public override to_json(): CalledByContractConditionJson {
-    return this.toJSON();
-  }
 }
 
 export class CalledByGroupCondition extends WitnessCondition {
@@ -284,10 +248,6 @@ export class CalledByGroupCondition extends WitnessCondition {
 
   public override toJSON(): CalledByGroupConditionJson {
     return { type: "CalledByGroup", group: this.group.toString() };
-  }
-
-  public override to_json(): CalledByGroupConditionJson {
-    return this.toJSON();
   }
 }
 
@@ -315,9 +275,5 @@ export class WitnessRule {
       action: this.action === WitnessRuleAction.Allow ? "Allow" : "Deny",
       conditions: this.conditions.map((condition) => condition.toJSON())
     };
-  }
-
-  public to_json(): WitnessRuleJson {
-    return this.toJSON();
   }
 }

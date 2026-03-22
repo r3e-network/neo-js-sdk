@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   buildStackParser,
   parseInvokeStack,
+  parseStackItemArray,
   parseStackItemBoolean,
   parseStackItemBytes,
   parseStackItemInteger,
   parseStackItemMap,
-  parseStackItemUtf8
+  parseStackItemStruct,
+  parseStackItemUtf8,
 } from "../src/index.js";
 
 describe("rpc stack parsers", () => {
@@ -27,15 +29,15 @@ describe("rpc stack parsers", () => {
         value: [
           {
             key: { type: "Integer", value: "1" },
-            value: { type: "ByteString", value: "aGVsbG8=" }
-          }
-        ]
-      })
+            value: { type: "ByteString", value: "aGVsbG8=" },
+          },
+        ],
+      }),
     ).toEqual([
       {
         key: { type: "Integer", value: "1" },
-        value: { type: "ByteString", value: "aGVsbG8=" }
-      }
+        value: { type: "ByteString", value: "aGVsbG8=" },
+      },
     ]);
   });
 
@@ -47,8 +49,8 @@ describe("rpc stack parsers", () => {
       gasconsumed: "1",
       stack: [
         { type: "Integer", value: "5" },
-        { type: "ByteString", value: "aGVsbG8=" }
-      ]
+        { type: "ByteString", value: "aGVsbG8=" },
+      ],
     });
 
     expect(result).toEqual([5n, "hello"]);
@@ -58,11 +60,45 @@ describe("rpc stack parsers", () => {
           script: "",
           state: "HALT",
           gasconsumed: "1",
-          stack: [{ type: "Integer", value: "5" }]
+          stack: [{ type: "Integer", value: "5" }],
         },
         parseStackItemInteger,
-        parseStackItemUtf8
-      )
+        parseStackItemUtf8,
+      ),
     ).toThrow(/Wrong number of items/);
+  });
+
+  it("parseStackItemArray extracts Array items", () => {
+    const result = parseStackItemArray({
+      type: "Array",
+      value: [
+        { type: "Integer", value: "1" },
+        { type: "Boolean", value: true },
+      ],
+    });
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ type: "Integer", value: "1" });
+    expect(result[1]).toEqual({ type: "Boolean", value: true });
+  });
+
+  it("parseStackItemStruct extracts Struct items", () => {
+    const result = parseStackItemStruct({
+      type: "Struct",
+      value: [{ type: "Integer", value: "42" }],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({ type: "Integer", value: "42" });
+  });
+
+  it("parseStackItemBytes throws on invalid type", () => {
+    expect(() => parseStackItemBytes({ type: "Integer", value: "42" })).toThrow(/ByteString or Buffer/);
+  });
+
+  it("parseStackItemArray throws on wrong type", () => {
+    expect(() => parseStackItemArray({ type: "Integer", value: "42" })).toThrow(/Expected stack item type Array/);
+  });
+
+  it("parseStackItemStruct throws on wrong type", () => {
+    expect(() => parseStackItemStruct({ type: "Boolean", value: true })).toThrow(/Expected stack item type Struct/);
   });
 });

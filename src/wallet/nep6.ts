@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { wallet as neonWallet } from "@cityofzion/neon-core";
-import { bytesToBase64, base64ToBytes } from "../internal/bytes.js";
+import { base64ToBytes, bytesToBase64 } from "../internal/bytes.js";
 import { H160 } from "../core/hash.js";
 import { PrivateKey, PublicKey } from "../core/keypair.js";
 import { Witness } from "../core/witness.js";
@@ -9,23 +9,15 @@ import { ScryptParams, decryptSecp256r1Key, encryptSecp256r1Key } from "./nep2.j
 export class Parameter {
   public constructor(
     public readonly name: string,
-    public readonly type: string
+    public readonly type: string,
   ) {}
 
   public toJSON(): { name: string; type: string } {
     return { name: this.name, type: this.type };
   }
 
-  public to_json(): { name: string; type: string } {
-    return this.toJSON();
-  }
-
   public static fromJSON(data: { name: string; type: string }): Parameter {
     return new Parameter(data.name, data.type);
-  }
-
-  public static from_json(data: { name: string; type: string }): Parameter {
-    return Parameter.fromJSON(data);
   }
 }
 
@@ -33,7 +25,7 @@ export class Contract {
   public constructor(
     public readonly script: Uint8Array,
     public readonly parameters: Parameter[],
-    public readonly deployed = false
+    public readonly deployed = false,
   ) {}
 
   public toJSON(): {
@@ -44,16 +36,8 @@ export class Contract {
     return {
       script: bytesToBase64(this.script),
       parameters: this.parameters.map((parameter) => parameter.toJSON()),
-      deployed: this.deployed
+      deployed: this.deployed,
     };
-  }
-
-  public to_json(): {
-    script: string;
-    parameters: Array<{ name: string; type: string }>;
-    deployed: boolean;
-  } {
-    return this.toJSON();
   }
 
   public static fromJSON(data: {
@@ -64,16 +48,8 @@ export class Contract {
     return new Contract(
       base64ToBytes(data.script),
       data.parameters.map((parameter) => Parameter.fromJSON(parameter)),
-      data.deployed
+      data.deployed,
     );
-  }
-
-  public static from_json(data: {
-    script: string;
-    parameters: Array<{ name: string; type: string }>;
-    deployed: boolean;
-  }): Contract {
-    return Contract.fromJSON(data);
   }
 }
 
@@ -96,14 +72,7 @@ export class Account {
   public readonly isDefault: boolean;
   public readonly locked: boolean;
 
-  public constructor({
-    address,
-    key,
-    contract,
-    label = "",
-    isDefault = false,
-    locked = false
-  }: AccountOptions) {
+  public constructor({ address, key, contract, label = "", isDefault = false, locked = false }: AccountOptions) {
     this.address = address;
     this.key = key;
     this.contract = contract;
@@ -120,15 +89,7 @@ export class Account {
     return this.contract === null;
   }
 
-  public watch_only(): boolean {
-    return this.watchOnly();
-  }
-
-  public decrypt(
-    passphrase: string,
-    addressVersion = 53,
-    scrypt = new ScryptParams()
-  ): PublicKey {
+  public decrypt(passphrase: string, addressVersion = 53, scrypt = new ScryptParams()): PublicKey {
     this.privateKey = decryptSecp256r1Key(this.key, passphrase, addressVersion, scrypt);
     return this.privateKey.publicKey();
   }
@@ -151,19 +112,11 @@ export class Account {
     return this.privateKey.signWitness(signData);
   }
 
-  public sign_witness(signData: Uint8Array): Witness {
-    return this.signWitness(signData);
-  }
-
   public getScriptHash(): H160 {
     if (this.privateKey !== null) {
       return this.privateKey.publicKey().getScriptHash();
     }
     return new H160(`0x${neonWallet.getScriptHashFromAddress(this.address)}`);
-  }
-
-  public get_script_hash(): H160 {
-    return this.getScriptHash();
   }
 
   public toJSON(): {
@@ -183,19 +136,8 @@ export class Account {
       label: this.label,
       isDefault: this.isDefault,
       lock: this.locked,
-      contract: this.contract.toJSON()
+      contract: this.contract.toJSON(),
     };
-  }
-
-  public to_json(): {
-    address: string;
-    key: string;
-    label: string;
-    isDefault: boolean;
-    lock: boolean;
-    contract: ReturnType<Contract["toJSON"]> | null;
-  } {
-    return this.toJSON();
   }
 
   public static fromJSON(data: {
@@ -210,33 +152,17 @@ export class Account {
       deployed: boolean;
     } | null;
   }): Account {
+    if (data.contract === null || data.contract === undefined) {
+      throw new Error("contract is required in NEP-6 JSON");
+    }
     return new Account({
       address: data.address,
       key: data.key,
       label: data.label,
       isDefault: data.isDefault,
       locked: data.lock,
-      contract: Contract.fromJSON(
-        data.contract ?? (() => {
-          throw new Error("neo: contract is required in NEP-6 JSON");
-        })()
-      )
+      contract: Contract.fromJSON(data.contract),
     });
-  }
-
-  public static from_json(data: {
-    address: string;
-    key: string;
-    label: string;
-    isDefault: boolean;
-    lock: boolean;
-    contract: {
-      script: string;
-      parameters: Array<{ name: string; type: string }>;
-      deployed: boolean;
-    } | null;
-  }): Account {
-    return Account.fromJSON(data);
   }
 }
 
@@ -255,13 +181,7 @@ export class Wallet {
   public readonly accounts: Account[];
   private passphrase?: string;
 
-  public constructor({
-    name,
-    accounts = [],
-    scrypt = new ScryptParams(),
-    passphrase,
-    version = "1.0"
-  }: WalletOptions) {
+  public constructor({ name, accounts = [], scrypt = new ScryptParams(), passphrase, version = "1.0" }: WalletOptions) {
     this.name = name;
     this.accounts = accounts;
     this.scrypt = scrypt;
@@ -283,15 +203,11 @@ export class Wallet {
     const account = new Account({
       address,
       key,
-      contract
+      contract,
     });
     account.setPrivateKey(privateKey);
     this.accounts.push(account);
     return account;
-  }
-
-  public create_account(): Account {
-    return this.createAccount();
   }
 
   public decrypt(passphrase: string): void {
@@ -302,18 +218,10 @@ export class Wallet {
   }
 
   public writeToFile(path: string): void {
-    try {
-      if (existsSync(path)) {
-        throw new Error(`wallet file ${path} already exists`);
-      }
-    } catch (error) {
-      throw error;
+    if (existsSync(path)) {
+      throw new Error(`wallet file ${path} already exists`);
     }
     writeFileSync(path, JSON.stringify(this.toJSON()), "utf8");
-  }
-
-  public write_to_file(path: string): void {
-    return this.writeToFile(path);
   }
 
   public toJSON(): {
@@ -326,17 +234,8 @@ export class Wallet {
       name: this.name,
       version: this.version,
       scrypt: this.scrypt.toJSON(),
-      accounts: this.accounts.map((account) => account.toJSON())
+      accounts: this.accounts.map((account) => account.toJSON()),
     };
-  }
-
-  public to_json(): {
-    name: string;
-    version: string;
-    scrypt: ReturnType<ScryptParams["toJSON"]>;
-    accounts: ReturnType<Account["toJSON"]>[];
-  } {
-    return this.toJSON();
   }
 
   public static fromJSON(data: {
@@ -360,36 +259,12 @@ export class Wallet {
       name: data.name,
       version: data.version,
       scrypt: ScryptParams.fromJSON(data.scrypt),
-      accounts: data.accounts.map((account) => Account.fromJSON(account))
+      accounts: data.accounts.map((account) => Account.fromJSON(account)),
     });
-  }
-
-  public static from_json(data: {
-    name: string;
-    version: string;
-    scrypt: { n: number; r: number; p: number };
-    accounts: Array<{
-      address: string;
-      key: string;
-      label: string;
-      isDefault: boolean;
-      lock: boolean;
-      contract: {
-        script: string;
-        parameters: Array<{ name: string; type: string }>;
-        deployed: boolean;
-      } | null;
-    }>;
-  }): Wallet {
-    return Wallet.fromJSON(data);
   }
 
   public static openNep6Wallet(path: string): Wallet {
     const raw = readFileSync(path, "utf8");
     return Wallet.fromJSON(JSON.parse(raw) as ReturnType<Wallet["toJSON"]>);
-  }
-
-  public static open_nep6_wallet(path: string): Wallet {
-    return Wallet.openNep6Wallet(path);
   }
 }

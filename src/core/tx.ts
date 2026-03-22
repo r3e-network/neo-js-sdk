@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
-import { bytesToBase64, bytesToHex } from "../internal/bytes.js";
+import { bytesToBase64, encodeUInt32LE } from "../internal/bytes.js";
 import { H160, H256 } from "./hash.js";
 import { PublicKey } from "./keypair.js";
 import { BinaryReader, BinaryWriter, serialize } from "./serializing.js";
 import { Witness, WitnessScope, witnessScopeName } from "./witness.js";
-import { WitnessRule, WitnessRuleJson } from "./witness-rule.js";
+import { WitnessRule, type WitnessRuleJson } from "./witness-rule.js";
 
 export interface SignerJson {
   account: string;
@@ -67,7 +67,7 @@ export class Signer {
     scopes,
     allowedContracts = [],
     allowedGroups = [],
-    rules = []
+    rules = [],
   }: {
     account: H160 | string;
     scopes: WitnessScope;
@@ -78,11 +78,9 @@ export class Signer {
     this.account = typeof account === "string" ? new H160(account) : account;
     this.scopes = scopes;
     this.allowedContracts = allowedContracts.map((contract) =>
-      typeof contract === "string" ? new H160(contract) : contract
+      typeof contract === "string" ? new H160(contract) : contract,
     );
-    this.allowedGroups = allowedGroups.map((group) =>
-      typeof group === "string" ? new PublicKey(group) : group
-    );
+    this.allowedGroups = allowedGroups.map((group) => (typeof group === "string" ? new PublicKey(group) : group));
     this.rules = rules;
   }
 
@@ -92,12 +90,8 @@ export class Signer {
       scopes: witnessScopeName(this.scopes),
       allowedcontracts: this.allowedContracts.map((contract) => contract.toString()),
       allowedgroups: this.allowedGroups.map((group) => group.toString()),
-      rules: this.rules.map((rule) => rule.toJSON())
+      rules: this.rules.map((rule) => rule.toJSON()),
     };
-  }
-
-  public to_json(): SignerJson {
-    return this.toJSON();
   }
 
   public marshalTo(writer: BinaryWriter): void {
@@ -129,7 +123,7 @@ export enum TxAttributeType {
   OracleResponse = 0x11,
   NotValidBefore = 0x20,
   Conflicts = 0x21,
-  NotaryAssisted = 0x22
+  NotaryAssisted = 0x22,
 }
 
 export enum OracleResponseCode {
@@ -142,7 +136,7 @@ export enum OracleResponseCode {
   ResponseTooLarge = 0x1a,
   InsufficientFunds = 0x1c,
   ContentTypeNotSupported = 0x1f,
-  Error = 0xff
+  Error = 0xff,
 }
 
 export class TxAttribute {
@@ -158,7 +152,11 @@ export class TxAttribute {
       case TxAttributeType.HighPriority:
         return new HighPriorityAttribute();
       case TxAttributeType.OracleResponse:
-        return new OracleResponseAttribute(reader.readUInt64LE(), reader.readUInt8() as OracleResponseCode, reader.readVarBytes());
+        return new OracleResponseAttribute(
+          reader.readUInt64LE(),
+          reader.readUInt8() as OracleResponseCode,
+          reader.readVarBytes(),
+        );
       case TxAttributeType.NotValidBefore:
         return new NotValidBeforeAttribute(reader.readUInt32LE());
       case TxAttributeType.Conflicts:
@@ -173,10 +171,6 @@ export class TxAttribute {
   public toJSON(): TxAttributeJson {
     return { type: TxAttributeType[this.type] as TxAttributeJson["type"] } as TxAttributeJson;
   }
-
-  public to_json(): TxAttributeJson {
-    return this.toJSON();
-  }
 }
 
 export class HighPriorityAttribute extends TxAttribute {
@@ -187,17 +181,13 @@ export class HighPriorityAttribute extends TxAttribute {
   public override toJSON(): HighPriorityAttributeJson {
     return { type: "HighPriority" };
   }
-
-  public override to_json(): HighPriorityAttributeJson {
-    return this.toJSON();
-  }
 }
 
 export class OracleResponseAttribute extends TxAttribute {
   public constructor(
     public readonly id: bigint,
     public readonly code: OracleResponseCode,
-    public readonly result: Uint8Array
+    public readonly result: Uint8Array,
   ) {
     super(TxAttributeType.OracleResponse);
   }
@@ -214,12 +204,8 @@ export class OracleResponseAttribute extends TxAttribute {
       type: "OracleResponse",
       id: this.id.toString(),
       code: OracleResponseCode[this.code],
-      result: bytesToBase64(this.result)
+      result: bytesToBase64(this.result),
     };
-  }
-
-  public override to_json(): OracleResponseAttributeJson {
-    return this.toJSON();
   }
 }
 
@@ -236,10 +222,6 @@ export class NotValidBeforeAttribute extends TxAttribute {
   public override toJSON(): NotValidBeforeAttributeJson {
     return { type: "NotValidBefore", height: this.height };
   }
-
-  public override to_json(): NotValidBeforeAttributeJson {
-    return this.toJSON();
-  }
 }
 
 export class ConflictsAttribute extends TxAttribute {
@@ -255,10 +237,6 @@ export class ConflictsAttribute extends TxAttribute {
   public override toJSON(): ConflictsAttributeJson {
     return { type: "Conflicts", hash: this.hash.toString() };
   }
-
-  public override to_json(): ConflictsAttributeJson {
-    return this.toJSON();
-  }
 }
 
 export class NotaryAssistedAttribute extends TxAttribute {
@@ -273,10 +251,6 @@ export class NotaryAssistedAttribute extends TxAttribute {
 
   public override toJSON(): NotaryAssistedAttributeJson {
     return { type: "NotaryAssisted", nkeys: this.nKeys };
-  }
-
-  public override to_json(): NotaryAssistedAttributeJson {
-    return this.toJSON();
   }
 }
 
@@ -299,7 +273,7 @@ export class Tx {
     script,
     signers = [],
     witnesses = [],
-    attributes = []
+    attributes = [],
   }: {
     nonce: number;
     systemFee: bigint | number;
@@ -324,16 +298,7 @@ export class Tx {
     const writer = new BinaryWriter();
     this.marshalUnsignedTo(writer);
     const digest = sha256(writer.toBytes());
-    const prefix = new Uint8Array(4);
-    prefix[0] = networkId & 0xff;
-    prefix[1] = (networkId >> 8) & 0xff;
-    prefix[2] = (networkId >> 16) & 0xff;
-    prefix[3] = (networkId >> 24) & 0xff;
-    return new Uint8Array([...prefix, ...digest]);
-  }
-
-  public get_sign_data(networkId: number): Uint8Array {
-    return this.getSignData(networkId);
+    return new Uint8Array([...encodeUInt32LE(networkId), ...digest]);
   }
 
   public marshalUnsignedTo(writer: BinaryWriter): void {
@@ -345,10 +310,6 @@ export class Tx {
     writer.writeMultiple(this.signers);
     writer.writeMultiple(this.attributes);
     writer.writeVarBytes(this.script);
-  }
-
-  public marshal_unsigned_to(writer: BinaryWriter): void {
-    this.marshalUnsignedTo(writer);
   }
 
   public marshalTo(writer: BinaryWriter): void {
@@ -369,16 +330,12 @@ export class Tx {
       signers: reader.readMultiple(Signer),
       attributes: reader.readMultiple(TxAttribute),
       script: reader.readVarBytes(),
-      witnesses: reader.readMultiple(Witness)
+      witnesses: reader.readMultiple(Witness),
     });
   }
 
   public toBytes(): Uint8Array {
     return serialize(this);
-  }
-
-  public to_bytes(): Uint8Array {
-    return this.toBytes();
   }
 
   public toJSON(): {
@@ -401,21 +358,7 @@ export class Tx {
       script: bytesToBase64(this.script),
       signers: this.signers.map((signer) => signer.toJSON()),
       attributes: this.attributes.map((attribute) => attribute.toJSON()),
-      witnesses: this.witnesses.map((witness) => witness.toJSON())
+      witnesses: this.witnesses.map((witness) => witness.toJSON()),
     };
-  }
-
-  public to_json(): {
-    version: number;
-    nonce: number;
-    sysfee: string;
-    netfee: string;
-    validuntilblock: number;
-    script: string;
-    signers: SignerJson[];
-    attributes: TxAttributeJson[];
-    witnesses: ReturnType<Witness["toJSON"]>[];
-  } {
-    return this.toJSON();
   }
 }
