@@ -3,3 +3,8 @@ dist/
 *.tgz
 coverage/
 *.tsbuildinfo
+
+# IDE / agent metadata
+.claude/
+.serena/
+docs/plans/
