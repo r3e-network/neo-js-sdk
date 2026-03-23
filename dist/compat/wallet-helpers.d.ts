@@ -1,0 +1,34 @@
+export declare const DEFAULT_ADDRESS_VERSION = 53;
+export declare function randomPrivateKeyHex(): string;
+export declare function isPrivateKey(value: string): boolean;
+export declare function normalizePublicKey(value: string, compressed?: boolean): string;
+export declare function isPublicKey(value: string): boolean;
+export declare function isScriptHash(value: string): boolean;
+export declare function isAddress(value: string): boolean;
+export declare function getAddressVersion(address: string): number;
+export declare function getPrivateKeyFromWIF(wif: string): string;
+export declare function getWIFFromPrivateKey(privateKey: string): string;
+export declare function isWIF(value: string): boolean;
+export declare function publicKeyFromPrivateKey(privateKey: string, compressed?: boolean): string;
+export declare function signHex(hex: string, privateKey: string): string;
+export declare function signBytes(message: Uint8Array, privateKey: string): Uint8Array;
+export declare function verifyHex(hex: string, signature: string, publicKey: string): boolean;
+export declare function verifyBytes(message: Uint8Array, signature: Uint8Array, publicKey: string): boolean;
+export declare function getVerificationScriptFromPublicKey(publicKey: string): string;
+export declare function getScriptHashFromVerificationScript(verificationScript: string): string;
+export declare function getScriptHashFromPublicKey(publicKey: string): string;
+export declare function getAddressFromScriptHash(scriptHash: string, addressVersion?: number): string;
+export declare function getScriptHashFromAddress(address: string): string;
+export declare function constructMultiSigVerificationScript(signingThreshold: number, publicKeys: string[]): string;
+export declare function scriptHashToAddressLabel(scriptHash: string): {
+    scriptHash: string;
+    address: string;
+};
+export declare function addressToScriptHashLabel(address: string): {
+    scriptHash: string;
+    address: string;
+};
+export declare function verificationScriptToBase64(publicKey: string): string;
+export declare function isSupportedAccountInput(value: string): boolean;
+export declare function normalizeAccountInput(value: string): string;
+export declare function hash160Script(scriptHex: string): string;
