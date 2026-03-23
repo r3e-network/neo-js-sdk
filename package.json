@@ -68,6 +68,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
     "coverage": "vitest run --coverage.enabled true --coverage.provider v8 --coverage.reporter=text --coverage.reporter=json-summary",
     "test": "vitest run",
     "test:watch": "vitest",
