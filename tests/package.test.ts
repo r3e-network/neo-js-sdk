@@ -27,6 +27,8 @@ describe("package exports", () => {
     expect(readme).toContain("# neo-js-sdk");
     expect(readme).toContain("npm install @r3e/neo-js-sdk");
     expect(readme).toContain('from "@r3e/neo-js-sdk"');
+    expect(readme).toContain('from "@r3e/neo-js-sdk/browser"');
+    expect(readme).toContain('from "@r3e/neo-js-sdk/core"');
     expect(readme).not.toContain('from "neo-js-sdk"');
   });
 

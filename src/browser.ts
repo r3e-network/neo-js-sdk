@@ -3,9 +3,6 @@ export {
   Account,
   Contract,
   Parameter,
-  ScryptParams,
   Wallet,
-  decryptSecp256r1Key,
-  encryptSecp256r1Key,
-} from "./wallet/browser.js";
+} from "./wallet/nep6-browser.js";
 export { rpc, sc, tx, u, wallet } from "./compat/browser.js";

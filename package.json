@@ -1,6 +1,6 @@
 {
   "name": "@r3e/neo-js-sdk",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Neo N3 JavaScript/TypeScript SDK — successor to neo-js (no longer maintained). Typed models, object-based RPC inputs, full N3 RPC coverage.",
   "repository": {
     "type": "git",
@@ -29,6 +29,38 @@
     "./browser": {
       "types": "./dist/browser.d.ts",
       "default": "./dist/browser.js"
+    },
+    "./core": {
+      "types": "./dist/core-exports.d.ts",
+      "default": "./dist/core-exports.js"
+    },
+    "./compat/browser": {
+      "types": "./dist/compat/browser.d.ts",
+      "default": "./dist/compat/browser.js"
+    },
+    "./compat/sc": {
+      "types": "./dist/compat/sc.d.ts",
+      "default": "./dist/compat/sc.js"
+    },
+    "./compat/tx": {
+      "types": "./dist/compat/tx.d.ts",
+      "default": "./dist/compat/tx.js"
+    },
+    "./compat/u": {
+      "types": "./dist/compat/hex-string.d.ts",
+      "default": "./dist/compat/hex-string.js"
+    },
+    "./compat/contract-param": {
+      "types": "./dist/compat/contract-param.d.ts",
+      "default": "./dist/compat/contract-param.js"
+    },
+    "./compat/wallet-helpers": {
+      "types": "./dist/compat/wallet-helpers.d.ts",
+      "default": "./dist/compat/wallet-helpers.js"
+    },
+    "./wallet/browser": {
+      "types": "./dist/wallet/nep6-browser.d.ts",
+      "default": "./dist/wallet/nep6-browser.js"
     }
   },
   "files": [

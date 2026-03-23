@@ -9,10 +9,18 @@ describe("browser entry", () => {
         ".": {
           browser?: string;
         };
+        "./core"?: {
+          default?: string;
+        };
+        "./compat/browser"?: {
+          default?: string;
+        };
       };
     };
 
     expect(packageJson.exports?.["."].browser).toBe("./dist/browser.js");
+    expect(packageJson.exports?.["./core"]?.default).toBe("./dist/core-exports.js");
+    expect(packageJson.exports?.["./compat/browser"]?.default).toBe("./dist/compat/browser.js");
   });
 
   it("exposes neon-js compatibility namespaces for browser consumers", () => {
@@ -54,5 +62,11 @@ describe("browser entry", () => {
     expect(tx.witnesses).toHaveLength(1);
     expect(tx.serialize(true)).toMatch(/^[0-9a-f]+$/i);
     expect(tx.hash()).toMatch(/^[0-9a-f]{64}$/i);
+  });
+
+  it("keeps node-only NEP-2 helpers out of the browser entry", () => {
+    expect("encryptSecp256r1Key" in browserSdk).toBe(false);
+    expect("decryptSecp256r1Key" in browserSdk).toBe(false);
+    expect("ScryptParams" in browserSdk).toBe(false);
   });
 });

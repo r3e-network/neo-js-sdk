@@ -19,6 +19,28 @@ Neo N3 JavaScript/TypeScript SDK with a typed RPC client, core transaction primi
 npm install @r3e/neo-js-sdk
 ```
 
+## Browser-Safe Entry Points
+
+Use the browser-specific entry points when you need compatibility helpers in frontend bundles without pulling in Node-only NEP-2 crypto code.
+
+```ts
+import { Account, tx, wallet } from "@r3e/neo-js-sdk/browser";
+import { PrivateKey, PublicKey } from "@r3e/neo-js-sdk/core";
+import { ScriptBuilder } from "@r3e/neo-js-sdk/compat/sc";
+```
+
+Available browser-safe subpaths:
+
+- `@r3e/neo-js-sdk/browser`
+- `@r3e/neo-js-sdk/core`
+- `@r3e/neo-js-sdk/compat/browser`
+- `@r3e/neo-js-sdk/compat/sc`
+- `@r3e/neo-js-sdk/compat/tx`
+- `@r3e/neo-js-sdk/compat/u`
+- `@r3e/neo-js-sdk/compat/contract-param`
+- `@r3e/neo-js-sdk/compat/wallet-helpers`
+- `@r3e/neo-js-sdk/wallet/browser`
+
 ## Verification
 
 ```bash
