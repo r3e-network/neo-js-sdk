@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { wallet as neonWallet } from "@cityofzion/neon-core";
 import { base64ToBytes, bytesToBase64 } from "../internal/bytes.js";
+import { getScriptHashFromAddress } from "../compat/wallet-helpers.js";
 import { H160 } from "../core/hash.js";
 import { PrivateKey, PublicKey } from "../core/keypair.js";
 import { Witness } from "../core/witness.js";
@@ -116,7 +116,7 @@ export class Account {
     if (this.privateKey !== null) {
       return this.privateKey.publicKey().getScriptHash();
     }
-    return new H160(`0x${neonWallet.getScriptHashFromAddress(this.address)}`);
+    return new H160(`0x${getScriptHashFromAddress(this.address)}`);
   }
 
   public toJSON(): {

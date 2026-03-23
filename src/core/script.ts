@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
 import { bytesToHex, concatBytes, toUint8Array, utf8ToBytes } from "../internal/bytes.js";
+import { sha256Bytes } from "../compat/hashes.js";
 import { H160, H256 } from "./hash.js";
 import { serialize } from "./serializing.js";
 import { PublicKey } from "./keypair.js";
@@ -17,8 +17,8 @@ export enum CallFlags {
 }
 
 export function syscallCode(syscallName: string): number {
-  const hash = createHash("sha256").update(syscallName).digest();
-  return hash.readUInt32LE(0);
+  const hash = sha256Bytes(utf8ToBytes(syscallName));
+  return hash[0] | (hash[1] << 8) | (hash[2] << 16) | (hash[3] << 24);
 }
 
 function bigintToFixedLE(value: bigint): Uint8Array {

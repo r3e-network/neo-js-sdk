@@ -1,6 +1,13 @@
-import { wallet } from "@cityofzion/neon-core";
-import { randomBytes } from "node:crypto";
 import { bytesToHex, equalBytes, hexToBytes, toUint8Array } from "../internal/bytes.js";
+import {
+  getAddressFromScriptHash,
+  getScriptHashFromPublicKey,
+  getVerificationScriptFromPublicKey,
+  publicKeyFromPrivateKey,
+  randomPrivateKeyHex,
+  signBytes,
+  verifyBytes,
+} from "../compat/wallet-helpers.js";
 import { H160 } from "./hash.js";
 import { BinaryReader, BinaryWriter } from "./serializing.js";
 import { ScriptBuilder } from "./script.js";
@@ -29,7 +36,7 @@ function privateKeyToHex(value?: Uint8Array | string | bigint | number): string 
     }
     return bytesToHex(value);
   }
-  return bytesToHex(randomBytes(32));
+  return randomPrivateKeyHex();
 }
 
 export class PrivateKey {
@@ -40,11 +47,11 @@ export class PrivateKey {
   }
 
   public publicKey(): PublicKey {
-    return new PublicKey(wallet.getPublicKeyFromPrivateKey(this.hex));
+    return new PublicKey(publicKeyFromPrivateKey(this.hex));
   }
 
   public sign(message: Uint8Array): Uint8Array {
-    return hexToBytes(wallet.sign(bytesToHex(message), this.hex));
+    return signBytes(message, this.hex);
   }
 
   public signWitness(signData: Uint8Array): Witness {
@@ -71,19 +78,19 @@ export class PublicKey {
   }
 
   public getScriptHash(): H160 {
-    return new H160(`0x${wallet.getScriptHashFromPublicKey(this.hex)}`);
+    return new H160(`0x${getScriptHashFromPublicKey(this.hex)}`);
   }
 
   public getAddress(addressVersion = 53): string {
-    return wallet.getAddressFromScriptHash(wallet.getScriptHashFromPublicKey(this.hex), addressVersion);
+    return getAddressFromScriptHash(getScriptHashFromPublicKey(this.hex), addressVersion);
   }
 
   public getSignatureRedeemScript(): Uint8Array {
-    return hexToBytes(wallet.getVerificationScriptFromPublicKey(this.hex));
+    return hexToBytes(getVerificationScriptFromPublicKey(this.hex));
   }
 
   public verify(message: Uint8Array, signature: Uint8Array): boolean {
-    return wallet.verify(bytesToHex(message), bytesToHex(signature), this.hex);
+    return verifyBytes(message, signature, this.hex);
   }
 
   public toBytes(): Uint8Array {

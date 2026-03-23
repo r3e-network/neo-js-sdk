@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
 import { bytesToBase64, encodeUInt32LE } from "../internal/bytes.js";
+import { sha256Bytes } from "../compat/hashes.js";
 import { H160, H256 } from "./hash.js";
 import { PublicKey } from "./keypair.js";
 import { BinaryReader, BinaryWriter, serialize } from "./serializing.js";
@@ -52,7 +52,7 @@ export type TxAttributeJson =
   | NotaryAssistedAttributeJson;
 
 function sha256(data: Uint8Array): Uint8Array {
-  return createHash("sha256").update(data).digest();
+  return sha256Bytes(data);
 }
 
 export class Signer {
@@ -331,6 +331,22 @@ export class Tx {
       attributes: reader.readMultiple(TxAttribute),
       script: reader.readVarBytes(),
       witnesses: reader.readMultiple(Witness),
+    });
+  }
+
+  public static unmarshalUnsignedFrom(reader: BinaryReader): Tx {
+    const version = reader.readUInt8();
+    if (version !== 0) {
+      throw new Error(`unexpected tx version: ${version}`);
+    }
+    return new Tx({
+      nonce: reader.readUInt32LE(),
+      systemFee: reader.readUInt64LE(),
+      networkFee: reader.readUInt64LE(),
+      validUntilBlock: reader.readUInt32LE(),
+      signers: reader.readMultiple(Signer),
+      attributes: reader.readMultiple(TxAttribute),
+      script: reader.readVarBytes(),
     });
   }
 

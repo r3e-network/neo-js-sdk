@@ -1,6 +1,6 @@
 {
-  "name": "neo-js-sdk",
-  "version": "0.2.3",
+  "name": "@r3e/neo-js-sdk",
+  "version": "0.3.6",
   "description": "Neo N3 JavaScript/TypeScript SDK — successor to neo-js (no longer maintained). Typed models, object-based RPC inputs, full N3 RPC coverage.",
   "repository": {
     "type": "git",
@@ -23,7 +23,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "browser": "./dist/browser.js",
       "default": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
     }
   },
   "files": [
@@ -50,7 +55,8 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@cityofzion/neon-core": "^5.8.1",
+    "@noble/curves": "^1.9.0",
+    "@noble/hashes": "^1.8.0",
     "bs58": "^6.0.0"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
-import { wallet as neonWallet } from "@cityofzion/neon-core";
 import { describe, expect, it } from "vitest";
+import { Account } from "../../src/browser.js";
 import {
   CallFlags,
   InvokeParameters,
@@ -22,7 +22,7 @@ const runLiveWif = process.env.RUN_NEO_LIVE === "1" && !!process.env.NEO_TEST_WI
 describe.runIf(runLiveWif)("live rpc with testnet wif", () => {
   it("validates key derivation, signing, and read-only rpc flows against testnet", async () => {
     const wif = process.env.NEO_TEST_WIF!;
-    const privateKeyHex = neonWallet.getPrivateKeyFromWIF(wif);
+    const privateKeyHex = Account.fromWIF(wif).privateKey;
     const privateKey = new PrivateKey(privateKeyHex);
     const publicKey = privateKey.publicKey();
     const address = publicKey.getAddress();
@@ -44,7 +44,7 @@ describe.runIf(runLiveWif)("live rpc with testnet wif", () => {
     expect(version.protocol.network).toBe(testNetworkId());
     expect(isValidAddress.isvalid).toBe(true);
 
-    const expectedAddress = new neonWallet.Account(wif).address;
+    const expectedAddress = Account.fromWIF(wif).address;
     expect(address).toBe(expectedAddress);
 
     const symbolResult = await client.invokeFunction({ contractHash: gasContractHash(), method: "symbol" });

@@ -15,17 +15,37 @@ describe("package exports", () => {
       sideEffects?: boolean;
       publishConfig?: { access?: string };
       engines?: { node?: string };
+      dependencies?: Record<string, string>;
     };
     const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
 
-    expect(packageJson.name).toBe("neo-js-sdk");
+    expect(packageJson.name).toBe("@r3e/neo-js-sdk");
     expect(packageJson.sideEffects).toBe(false);
     expect(packageJson.publishConfig).toEqual({ access: "public" });
     expect(packageJson.engines).toEqual({ node: ">=18" });
+    expect(packageJson.dependencies).not.toHaveProperty("@cityofzion/neon-core");
     expect(readme).toContain("# neo-js-sdk");
-    expect(readme).toContain("npm install neo-js-sdk");
-    expect(readme).toContain('from "neo-js-sdk"');
-    expect(readme).not.toContain("@r3e/neo-js");
+    expect(readme).toContain("npm install @r3e/neo-js-sdk");
+    expect(readme).toContain('from "@r3e/neo-js-sdk"');
+    expect(readme).not.toContain('from "neo-js-sdk"');
+  });
+
+  it("contains no source imports from neon-core", async () => {
+    const sourceFiles = [
+      "../src/browser.ts",
+      "../src/core/keypair.ts",
+      "../src/core/opcode.ts",
+      "../src/wallet/nep6.ts",
+      "../src/wallet/nep6-browser.ts",
+    ];
+
+    const sources = await Promise.all(
+      sourceFiles.map((file) => readFile(new URL(file, import.meta.url), "utf8")),
+    );
+
+    for (const source of sources) {
+      expect(source).not.toContain("@cityofzion/neon-core");
+    }
   });
 
   it("publishes only the canonical camelCase top-level helpers", () => {

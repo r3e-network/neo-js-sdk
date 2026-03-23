@@ -1,5 +1,5 @@
-import { sc, u } from "@cityofzion/neon-core";
 import { describe, expect, it } from "vitest";
+import { sc, u } from "../src/browser.js";
 import {
   H160,
   H256,
@@ -270,8 +270,8 @@ describe("RPC return shapes", () => {
     const hexScript = u.HexString.fromHex("010203");
     const cparams = [sc.ContractParam.string("neo"), sc.ContractParam.integer(42)];
 
-    await client.invokeFunction({ contractHash: gasContractHash(), method: "symbol", args: cparams });
-    await client.invokeContractVerify({ contractHash: gasContractHash(), args: cparams });
+    await client.invokeFunction({ contractHash: gasContractHash(), method: "symbol", args: cparams as never });
+    await client.invokeContractVerify({ contractHash: gasContractHash(), args: cparams as never });
     await client.invokeScript({ script: hexScript });
     await client.sendRawTransaction({ tx: hexScript });
     await client.submitBlock({ block: hexScript });

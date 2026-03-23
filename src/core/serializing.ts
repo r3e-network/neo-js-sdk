@@ -176,11 +176,16 @@ export class BinaryReader {
 
   public readUInt64LE(): bigint {
     const bytes = this.read(8);
-    let result = 0n;
-    for (let index = 7; index >= 0; index -= 1) {
-      result = (result << 8n) | BigInt(bytes[index]);
-    }
-    return result;
+    return (
+      BigInt(bytes[0]) |
+      (BigInt(bytes[1]) << 8n) |
+      (BigInt(bytes[2]) << 16n) |
+      (BigInt(bytes[3]) << 24n) |
+      (BigInt(bytes[4]) << 32n) |
+      (BigInt(bytes[5]) << 40n) |
+      (BigInt(bytes[6]) << 48n) |
+      (BigInt(bytes[7]) << 56n)
+    );
   }
 
   public readMultiple<T>(type: Unmarshalable<T>): T[] {

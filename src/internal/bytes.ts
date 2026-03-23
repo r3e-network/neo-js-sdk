@@ -67,3 +67,19 @@ export function encodeUInt32LE(value: number): Uint8Array {
   out[3] = (value >> 24) & 0xff;
   return out;
 }
+
+/**
+ * Convert hex string to base64 string
+ * Convenience function for common conversion pattern
+ */
+export function hex2base64(hex: string): string {
+  return bytesToBase64(hexToBytes(hex));
+}
+
+/**
+ * Convert base64 string to hex string
+ * Convenience function for common conversion pattern
+ */
+export function base642hex(base64: string): string {
+  return bytesToHex(base64ToBytes(base64));
+}

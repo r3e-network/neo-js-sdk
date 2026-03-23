@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
 import { encodeUInt32LE } from "../internal/bytes.js";
+import { sha256Bytes } from "../compat/hashes.js";
 import { H160, H256 } from "./hash.js";
 import { BinaryReader, BinaryWriter, serialize } from "./serializing.js";
 import { Tx } from "./tx.js";
@@ -55,7 +55,7 @@ export class Header {
   public getSignData(networkId: number): Uint8Array {
     const writer = new BinaryWriter();
     this.marshalUnsignedTo(writer);
-    const digest = createHash("sha256").update(writer.toBytes()).digest();
+    const digest = sha256Bytes(writer.toBytes());
     return new Uint8Array([...encodeUInt32LE(networkId), ...digest]);
   }
 

@@ -16,7 +16,7 @@ Neo N3 JavaScript/TypeScript SDK with a typed RPC client, core transaction primi
 ## Install
 
 ```bash
-npm install neo-js-sdk
+npm install @r3e/neo-js-sdk
 ```
 
 ## Verification
@@ -53,7 +53,7 @@ import {
   WitnessScope,
   gasContractHash,
   testNetworkId
-} from "neo-js-sdk";
+} from "@r3e/neo-js-sdk";
 
 const privateKey = new PrivateKey(
   "f046222512e7258c62f56f5e9e624d08c8dc38f336a15f320b3501ec7e90d7c6"
@@ -96,7 +96,7 @@ const invoke = await client.invokeFunction({
 ## Wallet Helpers
 
 ```ts
-import { Wallet } from "neo-js-sdk";
+import { Wallet } from "@r3e/neo-js-sdk";
 
 const wallet = new Wallet({ name: "demo", passphrase: "secret" });
 const account = wallet.createAccount();

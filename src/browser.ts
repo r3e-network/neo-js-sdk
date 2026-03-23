@@ -7,4 +7,5 @@ export {
   Wallet,
   decryptSecp256r1Key,
   encryptSecp256r1Key,
-} from "./wallet/index.js";
+} from "./wallet/browser.js";
+export { rpc, sc, tx, u, wallet } from "./compat/browser.js";

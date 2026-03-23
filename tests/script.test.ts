@@ -1,4 +1,3 @@
-import { sc } from "@cityofzion/neon-core";
 import { describe, expect, it } from "vitest";
 import { CallFlags, H160, OpCode, ScriptBuilder, bytesToHex, gasContractHash } from "../src/index.js";
 
@@ -13,17 +12,7 @@ describe("ScriptBuilder", () => {
     const args = ["from", "to", 1];
 
     const actual = new ScriptBuilder().emitContractCall(contractHash, "transfer", CallFlags.All, args).toBytes();
-
-    const expected = new sc.ScriptBuilder()
-      .emitContractCall({
-        scriptHash: contractHash.toString(),
-        operation: "transfer",
-        args: args as never,
-        callFlags: sc.CallFlags.All,
-      })
-      .build();
-
-    expect(bytesToHex(actual)).toBe(expected);
+    expect(bytesToHex(actual)).toBe("110c02746f0c0466726f6d13c01f0c087472616e736665720c14cf76e28bd0062c4a478ee35561011319f3cfa4d241627d5b52");
   });
 
   it("pushes typed hash values as raw bytes", () => {
